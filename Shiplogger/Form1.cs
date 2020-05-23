@@ -2,9 +2,11 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Runtime.Remoting.Messaging;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -14,22 +16,33 @@ namespace Shiplogger
 {
     public partial class Form1 : Form
     {
+        private string FilterCode = "";
+        private List<string> LoadedFiles = new List<string>();
+
         public Form1()
         {
             InitializeComponent();
         }
 
-        public List<string> PopulateFiles(string location)
+        public bool PopulateFiles(string location)
         {
             string[] _files = Directory.GetFiles(location);
 
-            return _files.Where(o => o.ToLower().EndsWith("csv")).ToList();
+            try
+            {
+                LoadedFiles = _files.Where(o => o.ToLower().EndsWith("csv")).ToList();
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         public List<ShippingEntry> ParseEntries(string[] rawEntries, DateTime date)
         {
             List<ShippingEntry> result = new List<ShippingEntry>();
-           
+            
 
             for (int i = 1; i < rawEntries.Length; i++)
             {
@@ -42,35 +55,53 @@ namespace Shiplogger
 
         public void UpdateListBox()
         {
-            lbDate.BeginUpdate();
-            lbDate.Items.Clear();
-            List<string> Files = PopulateFiles(txtAddress.Text);
+            PopulateFiles(txtAddress.Text);
 
-            System.Diagnostics.Debug.WriteLine($"{Files.Count} Files.");
+            lvDates.BeginUpdate();
+            lvDates.Items.Clear();
 
-            foreach (string s in Files)
+            foreach (string s in LoadedFiles)
             {
-                lbDate.Items.Add(s);
+                ListViewItem Entry = new ListViewItem
+                {
+                    Name = s,
+                    Text = s,
+                    ForeColor = Color.Black,
+                };
+
+                if ( ContainsFilterCode(s))
+                {
+                    Entry.ForeColor = Color.Blue;
+                    lvDates.Items.Add(Entry);
+                }
+                else if (cbFilter.Checked == false)
+                {
+                    lvDates.Items.Add(Entry);
+                }
             }
-            lbDate.EndUpdate();
+            lvDates.EndUpdate();
         }
 
-        public void UpdateListView()
+        public void UpdateLVEntries()
         {
-            string FileLocation = lbDate.SelectedItem.ToString();
+            Debug.WriteLine($"Running UpdateLVEntries");
+            string FileLocation = lvDates.SelectedItems[0].Text.ToString();
 
             lvEntries.BeginUpdate();
             lvEntries.Clear();
 
             string[] Lines = File.ReadAllLines(FileLocation);
-            List<ShippingEntry> Entries = ParseEntries(Lines, DateTime.Now).Sort(o=>o.CustomerCode);
+            
+            
+            List<ShippingEntry> Entries = ParseEntries(Lines, ParseDate(FileLocation)).OrderBy(o => o.CustomerCode).ToList();
             string[] ColumnsToAdd = Lines[0].Split(',');
 
             // Add in Date field.
             lvEntries.Columns.Add("Date");
             foreach (string s in ColumnsToAdd)
             {
-                lvEntries.Columns.Add(s);
+                    lvEntries.Columns.Add(s);
+                
             }
 
             //for (int i = 1; i < Lines.Length; i++) //start at 1 to skip column headers
@@ -84,11 +115,51 @@ namespace Shiplogger
 
             foreach (ShippingEntry entry in Entries)
             {
-                lvEntries.Items.Add(entry.ToListViewItem());
+
+                if (FilterCode == "" || entry.CustomerCode.ToLower().Contains(FilterCode))
+                {
+                    lvEntries.Items.Add(entry.ToListViewItem());
+                }
             }
 
             lvEntries.AutoResizeColumns(ColumnHeaderAutoResizeStyle.ColumnContent);
             lvEntries.EndUpdate();
+        }
+
+        public DateTime ParseDate(string s)
+        {
+            string[] Date = Path.GetFileNameWithoutExtension(s).Split('_');
+
+            int[] converted = new int[3];
+            converted[0] = Int32.Parse(Date[0]);
+            converted[1] = Int32.Parse(Date[1]);
+            converted[2] = Int32.Parse(Date[2]);
+
+            DateTime result = new DateTime(converted[0], converted[1], converted[2]);
+
+            return result;
+        }
+
+        public bool ContainsFilterCode(string FileLocation)
+        {
+            // Load lines and convert to List<ShippingEntry>.
+            string[] Lines = File.ReadAllLines(FileLocation);
+            List<ShippingEntry> Entries = ParseEntries(Lines, DateTime.Now).OrderBy(o => o.CustomerCode).ToList();
+
+            // Cycle through each entry to check against FilterCode.
+            foreach (ShippingEntry entry in Entries)
+            {
+                // If CustomerCode matches FilterCode, end method and return.
+                if (entry.CustomerCode.ToLower().Contains(FilterCode))
+                {
+                    Debug.WriteLine($"ContainsFilterCode match: {entry.CustomerCode}");
+                    return true;
+                }
+            }
+
+            // Nothing matched.
+            Debug.WriteLine($"No match founder for {FilterCode}");
+            return false;
         }
 
         private void btnPick_Click(object sender, EventArgs e)
@@ -108,17 +179,34 @@ namespace Shiplogger
             UpdateListBox();
         }
 
-        private void listBox1_SelectedValueChanged(object sender, EventArgs e)
-        {
-            if (lbDate.SelectedItem.ToString() == "")
-                return;
-
-            UpdateListView();
-        }
 
         private void btnFilter_Click(object sender, EventArgs e)
         {
+            FilterCode = txtCustomer.Text.ToLower();
 
+            UpdateListBox();
+
+            if (lvEntries.SelectedItems.Count < 1)
+                return;
+
+            UpdateLVEntries();
+        }
+
+        private void lvDates_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (lvDates.SelectedItems.Count <1 || lvDates.SelectedItems[0].ToString() == "")
+                return;
+
+            UpdateLVEntries();
+        }
+
+        private void txtCustomer_PreviewKeyDown(object sender, PreviewKeyDownEventArgs e)
+        {
+            if (e.KeyCode == Keys.Enter)
+            {
+                btnFilter_Click(sender, e);
+                
+            }
         }
     }
 
@@ -154,7 +242,7 @@ namespace Shiplogger
 
             Date = date;
             ShipmentCode = split[0];
-            CustomerCode = split[1].ToUpper();
+            CustomerCode = split[1];
             CustomerName = split[2];
             Reference1 = split[3];
             Reference2 = split[4];
@@ -195,10 +283,10 @@ namespace Shiplogger
 
         public ListViewItem ToListViewItem()
         {
-            ListViewItem result = new ListViewItem(Date.ToString());
+            ListViewItem result = new ListViewItem(Date.ToShortDateString());
 
             result.SubItems.Add(ShipmentCode);
-            result.SubItems.Add(CustomerCode);
+            result.SubItems.Add(CustomerCode.ToUpper());
             result.SubItems.Add(CustomerName);
             result.SubItems.Add(Reference1);
             result.SubItems.Add(Reference2);

@@ -30,14 +30,16 @@
         {
             this.btnLoad = new System.Windows.Forms.Button();
             this.lvEntries = new System.Windows.Forms.ListView();
-            this.lbDate = new System.Windows.Forms.ListBox();
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
+            this.lvDates = new System.Windows.Forms.ListView();
+            this.columnHeader1 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.txtAddress = new System.Windows.Forms.TextBox();
             this.btnPick = new System.Windows.Forms.Button();
             this.fbdFolder = new System.Windows.Forms.FolderBrowserDialog();
             this.label1 = new System.Windows.Forms.Label();
             this.txtCustomer = new System.Windows.Forms.TextBox();
             this.btnFilter = new System.Windows.Forms.Button();
+            this.cbFilter = new System.Windows.Forms.CheckBox();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).BeginInit();
             this.splitContainer1.Panel1.SuspendLayout();
             this.splitContainer1.Panel2.SuspendLayout();
@@ -66,18 +68,6 @@
             this.lvEntries.UseCompatibleStateImageBehavior = false;
             this.lvEntries.View = System.Windows.Forms.View.Details;
             // 
-            // lbDate
-            // 
-            this.lbDate.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.lbDate.FormattingEnabled = true;
-            this.lbDate.ItemHeight = 16;
-            this.lbDate.Location = new System.Drawing.Point(0, 0);
-            this.lbDate.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
-            this.lbDate.Name = "lbDate";
-            this.lbDate.Size = new System.Drawing.Size(607, 75);
-            this.lbDate.TabIndex = 2;
-            this.lbDate.SelectedValueChanged += new System.EventHandler(this.listBox1_SelectedValueChanged);
-            // 
             // splitContainer1
             // 
             this.splitContainer1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
@@ -90,7 +80,7 @@
             // 
             // splitContainer1.Panel1
             // 
-            this.splitContainer1.Panel1.Controls.Add(this.lbDate);
+            this.splitContainer1.Panel1.Controls.Add(this.lvDates);
             // 
             // splitContainer1.Panel2
             // 
@@ -98,6 +88,25 @@
             this.splitContainer1.Size = new System.Drawing.Size(607, 246);
             this.splitContainer1.SplitterDistance = 75;
             this.splitContainer1.TabIndex = 3;
+            // 
+            // lvDates
+            // 
+            this.lvDates.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
+            this.columnHeader1});
+            this.lvDates.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lvDates.HideSelection = false;
+            this.lvDates.Location = new System.Drawing.Point(0, 0);
+            this.lvDates.Name = "lvDates";
+            this.lvDates.Size = new System.Drawing.Size(607, 75);
+            this.lvDates.TabIndex = 0;
+            this.lvDates.UseCompatibleStateImageBehavior = false;
+            this.lvDates.View = System.Windows.Forms.View.Details;
+            this.lvDates.SelectedIndexChanged += new System.EventHandler(this.lvDates_SelectedIndexChanged);
+            // 
+            // columnHeader1
+            // 
+            this.columnHeader1.Text = "Date";
+            this.columnHeader1.Width = 597;
             // 
             // txtAddress
             // 
@@ -139,6 +148,8 @@
             this.txtCustomer.Name = "txtCustomer";
             this.txtCustomer.Size = new System.Drawing.Size(100, 22);
             this.txtCustomer.TabIndex = 7;
+            this.txtCustomer.TextChanged += new System.EventHandler(this.btnFilter_Click);
+            this.txtCustomer.PreviewKeyDown += new System.Windows.Forms.PreviewKeyDownEventHandler(this.txtCustomer_PreviewKeyDown);
             // 
             // btnFilter
             // 
@@ -150,11 +161,23 @@
             this.btnFilter.UseVisualStyleBackColor = true;
             this.btnFilter.Click += new System.EventHandler(this.btnFilter_Click);
             // 
+            // cbFilter
+            // 
+            this.cbFilter.AutoSize = true;
+            this.cbFilter.Location = new System.Drawing.Point(237, 45);
+            this.cbFilter.Name = "cbFilter";
+            this.cbFilter.Size = new System.Drawing.Size(115, 21);
+            this.cbFilter.TabIndex = 9;
+            this.cbFilter.Text = "Filter results?";
+            this.cbFilter.UseVisualStyleBackColor = true;
+            this.cbFilter.CheckedChanged += new System.EventHandler(this.btnFilter_Click);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(635, 336);
+            this.Controls.Add(this.cbFilter);
             this.Controls.Add(this.btnFilter);
             this.Controls.Add(this.txtCustomer);
             this.Controls.Add(this.label1);
@@ -179,7 +202,6 @@
 
         private System.Windows.Forms.Button btnLoad;
         private System.Windows.Forms.ListView lvEntries;
-        private System.Windows.Forms.ListBox lbDate;
         private System.Windows.Forms.SplitContainer splitContainer1;
         private System.Windows.Forms.TextBox txtAddress;
         private System.Windows.Forms.Button btnPick;
@@ -187,6 +209,9 @@
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.TextBox txtCustomer;
         private System.Windows.Forms.Button btnFilter;
+        private System.Windows.Forms.ListView lvDates;
+        private System.Windows.Forms.ColumnHeader columnHeader1;
+        private System.Windows.Forms.CheckBox cbFilter;
     }
 }
 
