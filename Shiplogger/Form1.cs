@@ -26,28 +26,78 @@ namespace Shiplogger
             return _files.Where(o => o.ToLower().EndsWith("csv")).ToList();
         }
 
-        public void LoadFile(string FileLocation)
+        public List<ShippingEntry> ParseEntries(string[] rawEntries, DateTime date)
         {
-            String[] Lines = File.ReadAllLines(FileLocation);
+            List<ShippingEntry> result = new List<ShippingEntry>();
+           
 
-            foreach ( string s in Lines)
+            for (int i = 1; i < rawEntries.Length; i++)
             {
-                System.Diagnostics.Debug.WriteLine(s);
+                ShippingEntry entry = new ShippingEntry(date, rawEntries[i]);
+                result.Add(entry);
             }
+
+            return result;
         }
 
-        private void button1_Click(object sender, EventArgs e)
+        public void UpdateListBox()
         {
-            
+            lbDate.BeginUpdate();
+            lbDate.Items.Clear();
+            List<string> Files = PopulateFiles(txtAddress.Text);
+
+            System.Diagnostics.Debug.WriteLine($"{Files.Count} Files.");
+
+            foreach (string s in Files)
+            {
+                lbDate.Items.Add(s);
+            }
+            lbDate.EndUpdate();
+        }
+
+        public void UpdateListView()
+        {
+            string FileLocation = lbDate.SelectedItem.ToString();
+
+            lvEntries.BeginUpdate();
+            lvEntries.Clear();
+
+            string[] Lines = File.ReadAllLines(FileLocation);
+            List<ShippingEntry> Entries = ParseEntries(Lines, DateTime.Now).Sort(o=>o.CustomerCode);
+            string[] ColumnsToAdd = Lines[0].Split(',');
+
+            // Add in Date field.
+            lvEntries.Columns.Add("Date");
+            foreach (string s in ColumnsToAdd)
+            {
+                lvEntries.Columns.Add(s);
+            }
+
+            //for (int i = 1; i < Lines.Length; i++) //start at 1 to skip column headers
+            //{
+            //    EntryToAdd = Lines[i].Split(',');
+            //    ListViewItem lvi = new ListViewItem(EntryToAdd[0]);
+            //    lvi.SubItems.AddRange(EntryToAdd);
+
+            //    lvEntries.Items.Add(lvi);
+            //}
+
+            foreach (ShippingEntry entry in Entries)
+            {
+                lvEntries.Items.Add(entry.ToListViewItem());
+            }
+
+            lvEntries.AutoResizeColumns(ColumnHeaderAutoResizeStyle.ColumnContent);
+            lvEntries.EndUpdate();
         }
 
         private void btnPick_Click(object sender, EventArgs e)
         {
-            if (!Directory.Exists(textBox1.Text))
+            if (!Directory.Exists(txtAddress.Text))
             {
-                if ( fbdFolder.ShowDialog() == DialogResult.OK)
+                if (fbdFolder.ShowDialog() == DialogResult.OK)
                 {
-                    textBox1.Text = fbdFolder.SelectedPath;
+                    txtAddress.Text = fbdFolder.SelectedPath;
                 }
                 else
                 {
@@ -55,48 +105,121 @@ namespace Shiplogger
                 }
             }
 
-            listBox1.BeginUpdate();
-            listBox1.Items.Clear();
-            List<string> Files = PopulateFiles(textBox1.Text);
-            System.Diagnostics.Debug.WriteLine($"{Files.Count} Files.");
-
-            foreach (string s in Files)
-            {
-                listBox1.Items.Add(s);
-            }
-            listBox1.EndUpdate();
+            UpdateListBox();
         }
 
         private void listBox1_SelectedValueChanged(object sender, EventArgs e)
         {
-            if (listBox1.SelectedItem.ToString() == "")
+            if (lbDate.SelectedItem.ToString() == "")
                 return;
 
-            string FileLocation = listBox1.SelectedItem.ToString();
-
-            listView1.BeginUpdate();
-            listView1.Clear();
-
-            string[] Lines = File.ReadAllLines(FileLocation);
-            string[] ColumnsToAdd = Lines[0].Split(',');
-            string[] EntryToAdd;
-
-            foreach (string s in ColumnsToAdd)
-            {
-                listView1.Columns.Add(s);
-            }
-
-            for (int i = 1; i < Lines.Length; i++) //start at 1 to skip column headers
-            {
-                EntryToAdd = Lines[i].Split(',');
-                ListViewItem lvi = new ListViewItem(EntryToAdd[0]);
-                lvi.SubItems.AddRange(EntryToAdd);
-
-                listView1.Items.Add(lvi);
-            }
-
-            listView1.AutoResizeColumns(ColumnHeaderAutoResizeStyle.ColumnContent);
-            listView1.EndUpdate();
+            UpdateListView();
         }
+
+        private void btnFilter_Click(object sender, EventArgs e)
+        {
+
+        }
+    }
+
+    public class ShippingEntry
+    {
+        public DateTime Date = DateTime.Now;
+        public string ShipmentCode;
+        public string CustomerCode;
+        public string CustomerName;
+        public string Reference1;
+        public string Reference2;
+        public string Reference3;
+        public string Reference4;
+        public string Reference5;
+        public string PackagePIN;
+        public string SPI;
+        public string TotalCostwithTax;
+        public string TotalCostBeforeTax;
+        public string GSTAmount;
+        public string HSTAmount;
+        public string QSTAmount;
+        public string BaseCost;
+        public string ResidentialAreaCharge;
+        public string FuelSurcharge;
+        public string ExpCheqSurcharge;
+        public string ReferencePerPiece;
+
+        public ShippingEntry() { }
+
+        public ShippingEntry(DateTime date, string item)
+        {
+            string[] split = item.Split(',');
+
+            Date = date;
+            ShipmentCode = split[0];
+            CustomerCode = split[1].ToUpper();
+            CustomerName = split[2];
+            Reference1 = split[3];
+            Reference2 = split[4];
+            Reference3 = split[5];
+            Reference4 = split[6];
+            Reference5 = split[7];
+            if (split.Length < 21)
+            {
+                PackagePIN = split[8];
+                SPI = split[9];
+                TotalCostwithTax = split[10];
+                TotalCostBeforeTax = split[11];
+                GSTAmount = split[12];
+                HSTAmount = split[13];
+                QSTAmount = split[14];
+                BaseCost = split[15];
+                ResidentialAreaCharge = split[16];
+                FuelSurcharge = split[17];
+                ExpCheqSurcharge = split[18];
+                ReferencePerPiece = split[19];
+            }
+            else
+            {
+                PackagePIN = split[9];
+                SPI = split[10];
+                TotalCostwithTax = split[11];
+                TotalCostBeforeTax = split[12];
+                GSTAmount = split[13];
+                HSTAmount = split[14];
+                QSTAmount = split[15];
+                BaseCost = split[16];
+                ResidentialAreaCharge = split[17];
+                FuelSurcharge = split[18];
+                ExpCheqSurcharge = split[19];
+                ReferencePerPiece = split[20];
+            }
+        }
+
+        public ListViewItem ToListViewItem()
+        {
+            ListViewItem result = new ListViewItem(Date.ToString());
+
+            result.SubItems.Add(ShipmentCode);
+            result.SubItems.Add(CustomerCode);
+            result.SubItems.Add(CustomerName);
+            result.SubItems.Add(Reference1);
+            result.SubItems.Add(Reference2);
+            result.SubItems.Add(Reference3);
+            result.SubItems.Add(Reference4);
+            result.SubItems.Add(Reference5);
+            result.SubItems.Add(PackagePIN);
+            result.SubItems.Add(SPI);
+            result.SubItems.Add(TotalCostwithTax);
+            result.SubItems.Add(TotalCostBeforeTax);
+            result.SubItems.Add(GSTAmount);
+            result.SubItems.Add(HSTAmount);
+            result.SubItems.Add(QSTAmount);
+            result.SubItems.Add(BaseCost);
+            result.SubItems.Add(ResidentialAreaCharge);
+            result.SubItems.Add(FuelSurcharge);
+            result.SubItems.Add(ExpCheqSurcharge);
+            result.SubItems.Add(ReferencePerPiece);
+
+            return result;
+        }
+    
     }
 }
