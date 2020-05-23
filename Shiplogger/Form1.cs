@@ -208,6 +208,12 @@ namespace Shiplogger
                 
             }
         }
+
+        private void txtAddress_PreviewKeyDown(object sender, PreviewKeyDownEventArgs e)
+        {
+            if (e.KeyCode == Keys.Enter)
+                btnPick_Click(sender, e);
+        }
     }
 
     public class ShippingEntry
