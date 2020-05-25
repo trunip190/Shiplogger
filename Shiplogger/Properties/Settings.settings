@@ -3,7 +3,10 @@
   <Profiles />
   <Settings>
     <Setting Name="BaseDir" Type="System.String" Scope="User">
-      <Value Profile="(Default)">C:\Users\chrisw\purofiles</Value>
+      <Value Profile="(Default)">P:\Shipping\purofiles</Value>
+    </Setting>
+    <Setting Name="BaseDir2" Type="System.String" Scope="User">
+      <Value Profile="(Default)">P:\Public\Shipping\purofiles</Value>
     </Setting>
   </Settings>
 </SettingsFile>

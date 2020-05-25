@@ -18,10 +18,12 @@ namespace Shiplogger
     {
         private string FilterCode = "";
         private List<string> LoadedFiles = new List<string>();
+        private string WorkingDir;
 
         public Form1()
         {
             InitializeComponent();
+            WorkingDir = Properties.Settings.Default.BaseDir;
         }
 
         public bool PopulateFiles(string location)
@@ -55,7 +57,7 @@ namespace Shiplogger
 
         public void UpdateListBox()
         {
-            PopulateFiles(txtAddress.Text);
+            PopulateFiles(WorkingDir);
 
             lvDates.BeginUpdate();
             lvDates.Items.Clear();
@@ -65,9 +67,10 @@ namespace Shiplogger
                 ListViewItem Entry = new ListViewItem
                 {
                     Name = s,
-                    Text = s,
+                    Text = Path.GetFileNameWithoutExtension(s),
                     ForeColor = Color.Black,
                 };
+                Entry.Text = ParseDate(s).ToLongDateString();
 
                 if ( ContainsFilterCode(s))
                 {
@@ -85,7 +88,7 @@ namespace Shiplogger
         public void UpdateLVEntries()
         {
             Debug.WriteLine($"Running UpdateLVEntries");
-            string FileLocation = lvDates.SelectedItems[0].Text.ToString();
+            string FileLocation = lvDates.SelectedItems[0].Name.ToString();
 
             lvEntries.BeginUpdate();
             lvEntries.Clear();
@@ -164,10 +167,11 @@ namespace Shiplogger
 
         private void btnPick_Click(object sender, EventArgs e)
         {
-            if (!Directory.Exists(txtAddress.Text))
+            if (!CheckDirectories())
             {
                 if (fbdFolder.ShowDialog() == DialogResult.OK)
                 {
+                    WorkingDir = fbdFolder.SelectedPath;
                     txtAddress.Text = fbdFolder.SelectedPath;
                 }
                 else
@@ -179,6 +183,29 @@ namespace Shiplogger
             UpdateListBox();
         }
 
+        public bool CheckDirectories()
+        {
+            if (Directory.Exists(txtAddress.Text))
+            {
+                return true;
+            }
+
+            if (Directory.Exists(Properties.Settings.Default.BaseDir))
+            {
+                WorkingDir = Properties.Settings.Default.BaseDir;
+                txtAddress.Text = Properties.Settings.Default.BaseDir;
+                return true;
+            }
+
+            if (Directory.Exists(Properties.Settings.Default.BaseDir2))
+            {
+                WorkingDir = Properties.Settings.Default.BaseDir2;
+                txtAddress.Text = Properties.Settings.Default.BaseDir2;
+                return true;
+            }
+
+            return false;
+        }
 
         private void btnFilter_Click(object sender, EventArgs e)
         {
@@ -213,6 +240,11 @@ namespace Shiplogger
         {
             if (e.KeyCode == Keys.Enter)
                 btnPick_Click(sender, e);
+        }
+
+        private void Form1_Load(object sender, EventArgs e)
+        {
+            btnPick_Click(sender, e);
         }
     }
 
