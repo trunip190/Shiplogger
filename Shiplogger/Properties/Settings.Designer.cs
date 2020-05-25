@@ -25,25 +25,13 @@ namespace Shiplogger.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("P:\\Shipping\\purofiles")]
+        [global::System.Configuration.DefaultSettingValueAttribute("P:\\Public\\Shipping\\purofiles")]
         public string BaseDir {
             get {
                 return ((string)(this["BaseDir"]));
             }
             set {
                 this["BaseDir"] = value;
-            }
-        }
-        
-        [global::System.Configuration.UserScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("P:\\Public\\Shipping\\purofiles")]
-        public string BaseDir2 {
-            get {
-                return ((string)(this["BaseDir2"]));
-            }
-            set {
-                this["BaseDir2"] = value;
             }
         }
     }

@@ -23,7 +23,11 @@ namespace Shiplogger
         public Form1()
         {
             InitializeComponent();
-            WorkingDir = Properties.Settings.Default.BaseDir;
+            string s = $"{Environment.CurrentDirectory}\\purofiles\\";
+            if ( Directory.Exists(s))
+            {
+                Properties.Settings.Default.BaseDir = s;
+            }
         }
 
         public bool PopulateFiles(string location)
@@ -187,6 +191,7 @@ namespace Shiplogger
         {
             if (Directory.Exists(txtAddress.Text))
             {
+                WorkingDir = txtAddress.Text;
                 return true;
             }
 
@@ -197,12 +202,6 @@ namespace Shiplogger
                 return true;
             }
 
-            if (Directory.Exists(Properties.Settings.Default.BaseDir2))
-            {
-                WorkingDir = Properties.Settings.Default.BaseDir2;
-                txtAddress.Text = Properties.Settings.Default.BaseDir2;
-                return true;
-            }
 
             return false;
         }
