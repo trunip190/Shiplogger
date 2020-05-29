@@ -17,7 +17,10 @@ namespace Shiplogger
     public partial class Form1 : Form
     {
         private string FilterCode = "";
+        private string OrderNo = "";
         private List<string> LoadedFiles = new List<string>();
+        private List<ShippingEntry> Entries = new List<ShippingEntry>();
+        private string FileLocation = "";
         private string WorkingDir;
 
         public Form1()
@@ -91,25 +94,31 @@ namespace Shiplogger
 
         public void UpdateLVEntries()
         {
-            Debug.WriteLine($"Running UpdateLVEntries");
-            string FileLocation = lvDates.SelectedItems[0].Name.ToString();
+            //if (lvDates.SelectedItems.Count < 1)
+            //    return;
 
             lvEntries.BeginUpdate();
             lvEntries.Clear();
 
+            if (FileLocation == "")
+                return; ;
+
+
             string[] Lines = File.ReadAllLines(FileLocation);
-            
-            
-            List<ShippingEntry> Entries = ParseEntries(Lines, ParseDate(FileLocation)).OrderBy(o => o.CustomerCode).ToList();
+
+            Entries = ParseEntries(Lines, ParseDate(FileLocation)).OrderBy(o => o.CustomerCode).ToList();
             string[] ColumnsToAdd = Lines[0].Split(',');
+
 
             // Add in Date field.
             lvEntries.Columns.Add("Date");
+            lvEntries.Columns.Add("Courier");
             foreach (string s in ColumnsToAdd)
             {
-                    lvEntries.Columns.Add(s);
-                
+                lvEntries.Columns.Add(s);
+
             }
+
 
             //for (int i = 1; i < Lines.Length; i++) //start at 1 to skip column headers
             //{
@@ -123,7 +132,11 @@ namespace Shiplogger
             foreach (ShippingEntry entry in Entries)
             {
 
-                if (FilterCode == "" || entry.CustomerCode.ToLower().Contains(FilterCode))
+                if (FilterCode == "" && OrderNo == "")
+                {
+                    lvEntries.Items.Add(entry.ToListViewItem());
+                }
+                else if (entry.CustomerCode.ToLower().Contains(FilterCode) && entry.ContainsOrder(OrderNo))
                 {
                     lvEntries.Items.Add(entry.ToListViewItem());
                 }
@@ -157,7 +170,7 @@ namespace Shiplogger
             foreach (ShippingEntry entry in Entries)
             {
                 // If CustomerCode matches FilterCode, end method and return.
-                if (entry.CustomerCode.ToLower().Contains(FilterCode))
+                if (entry.CustomerCode.ToLower().Contains(FilterCode) && entry.ContainsOrder(OrderNo))
                 {
                     Debug.WriteLine($"ContainsFilterCode match: {entry.CustomerCode}");
                     return true;
@@ -209,11 +222,9 @@ namespace Shiplogger
         private void btnFilter_Click(object sender, EventArgs e)
         {
             FilterCode = txtCustomer.Text.ToLower();
+            OrderNo = txtOrder.Text.ToLower();
 
             UpdateListBox();
-
-            if (lvEntries.SelectedItems.Count < 1)
-                return;
 
             UpdateLVEntries();
         }
@@ -223,13 +234,25 @@ namespace Shiplogger
             if (lvDates.SelectedItems.Count <1 || lvDates.SelectedItems[0].ToString() == "")
                 return;
 
+
+            FileLocation = lvDates.SelectedItems[0].Name.ToString();
             UpdateLVEntries();
         }
 
         private void txtCustomer_PreviewKeyDown(object sender, PreviewKeyDownEventArgs e)
         {
+            
+
             if (e.KeyCode == Keys.Enter)
             {
+                if ((sender as TextBox).Text == "FTP")
+                {
+                    (sender as TextBox).Text = "";
+                    FTPForm1 newform = new FTPForm1();
+                    newform.ShowDialog();
+                    return;
+                }
+
                 btnFilter_Click(sender, e);
                 
             }
@@ -245,11 +268,21 @@ namespace Shiplogger
         {
             btnPick_Click(sender, e);
         }
+
+        private void lvEntries_DoubleClick(object sender, EventArgs e)
+        {
+            if (lvEntries.SelectedItems.Count < 1||lvEntries.SelectedItems[0].SubItems.Count < 10|| lvEntries.SelectedItems[0].SubItems[10].Text == "")
+                return;
+
+            Process.Start($"https://www.purolator.com/en/shipping/tracker?pin={lvEntries.SelectedItems[0].SubItems[10].Text}");
+            //Process.Start($"https://www.purolator.com/en/ship-track/tracking-details.page?pin={lvEntries.SelectedItems[0].SubItems[10].Text}");
+        }
     }
 
     public class ShippingEntry
     {
         public DateTime Date = DateTime.Now;
+        public string CourierCompany = "Purolator";
         public string ShipmentCode;
         public string CustomerCode;
         public string CustomerName;
@@ -271,6 +304,28 @@ namespace Shiplogger
         public string ExpCheqSurcharge;
         public string ReferencePerPiece;
 
+        public string PuroLink => $"https://www.purolator.com/en/ship-track/tracking-details.page?pin={PackagePIN}";
+
+        public bool ContainsOrder(string OrderNo)
+        {
+            if (Reference1.ToLower().Contains(OrderNo.ToLower()))
+                return true;
+
+            if (Reference2.ToLower().Contains(OrderNo.ToLower()))
+                return true;
+
+            if (Reference3.ToLower().Contains(OrderNo.ToLower()))
+                return true;
+
+            if (Reference4.ToLower().Contains(OrderNo.ToLower()))
+                return true;
+
+            if (Reference5.ToLower().Contains(OrderNo.ToLower()))
+                return true;
+
+            return false;
+        }
+
         public ShippingEntry() { }
 
         public ShippingEntry(DateTime date, string item)
@@ -286,6 +341,7 @@ namespace Shiplogger
             Reference3 = split[5];
             Reference4 = split[6];
             Reference5 = split[7];
+
             if (split.Length < 21)
             {
                 PackagePIN = split[8];
@@ -322,6 +378,7 @@ namespace Shiplogger
         {
             ListViewItem result = new ListViewItem(Date.ToShortDateString());
 
+            result.SubItems.Add(CourierCompany);
             result.SubItems.Add(ShipmentCode);
             result.SubItems.Add(CustomerCode.ToUpper());
             result.SubItems.Add(CustomerName);
@@ -345,6 +402,7 @@ namespace Shiplogger
 
             return result;
         }
-    
+
+        
     }
 }
