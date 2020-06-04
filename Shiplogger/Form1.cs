@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Runtime.Remoting.Messaging;
 using System.Text;
 using System.Threading.Tasks;
@@ -55,8 +56,14 @@ namespace Shiplogger
 
             for (int i = 1; i < rawEntries.Length; i++)
             {
-                ShippingEntry entry = new ShippingEntry(date, rawEntries[i]);
-                result.Add(entry);
+                if (rawEntries[i] != "")
+                {
+                    ShippingEntry entry = new ShippingEntry(date, rawEntries[i]);
+                    if (entry != null)
+                    {
+                        result.Add(entry);
+                    }
+                }
             }
 
             return result;
@@ -119,30 +126,35 @@ namespace Shiplogger
 
             }
 
-
-            //for (int i = 1; i < Lines.Length; i++) //start at 1 to skip column headers
-            //{
-            //    EntryToAdd = Lines[i].Split(',');
-            //    ListViewItem lvi = new ListViewItem(EntryToAdd[0]);
-            //    lvi.SubItems.AddRange(EntryToAdd);
-
-            //    lvEntries.Items.Add(lvi);
-            //}
+            //string currentCustomer = "";
+            bool light = false;
 
             foreach (ShippingEntry entry in Entries)
             {
+                ListViewItem lvi = entry.ToListViewItem();                              
 
-                if (FilterCode == "" && OrderNo == "")
+                if ((FilterCode == "" && OrderNo == "")|| entry.CustomerCode.ToLower().Contains(FilterCode) && entry.ContainsOrder(OrderNo))
                 {
-                    lvEntries.Items.Add(entry.ToListViewItem());
-                }
-                else if (entry.CustomerCode.ToLower().Contains(FilterCode) && entry.ContainsOrder(OrderNo))
-                {
-                    lvEntries.Items.Add(entry.ToListViewItem());
+                    if (entry.SPI == "S")
+                    {
+                        light = !light;
+                    }
+
+                    if (light)
+                    {
+                        lvi.BackColor = Color.LightGray;
+                    }
+                    else
+                    {
+                        lvi.BackColor = Color.White;
+                    }
+
+                    lvEntries.Items.Add(lvi);
                 }
             }
 
             lvEntries.AutoResizeColumns(ColumnHeaderAutoResizeStyle.ColumnContent);
+            lvEntries.Columns[0].Width = 5;
             lvEntries.EndUpdate();
         }
 
@@ -249,7 +261,10 @@ namespace Shiplogger
                 {
                     (sender as TextBox).Text = "";
                     FTPForm1 newform = new FTPForm1();
-                    newform.ShowDialog();
+                    if ( newform.ShowDialog() == DialogResult.OK)
+                    {
+                        btnPick_Click(sender, e);
+                    }
                     return;
                 }
 
@@ -266,6 +281,15 @@ namespace Shiplogger
 
         private void Form1_Load(object sender, EventArgs e)
         {
+            try
+            {
+                FTPMethods.DownloadNewFiles();
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine(ex.Message);
+            }
+
             btnPick_Click(sender, e);
         }
 
@@ -330,6 +354,9 @@ namespace Shiplogger
 
         public ShippingEntry(DateTime date, string item)
         {
+            if (!item.Contains(','))
+                return;
+
             string[] split = item.Split(',');
 
             Date = date;
@@ -404,5 +431,135 @@ namespace Shiplogger
         }
 
         
+    }
+
+    public static class FTPMethods
+    {
+        public static string[] GetDirectoryListing()
+        {
+            // Get the object used to communicate with the server.
+            FtpWebRequest directoryListRequest = (FtpWebRequest)WebRequest.Create(@"ftp://10.13.10.102:21");
+            directoryListRequest.Method = WebRequestMethods.Ftp.ListDirectoryDetails;
+
+            // This example assumes the FTP site uses anonymous logon.
+            directoryListRequest.Credentials = new NetworkCredential("ftpuser", "ftpuser");
+            directoryListRequest.UsePassive = false;
+
+            using (FtpWebResponse directoryListResponse = (FtpWebResponse)directoryListRequest.GetResponse())
+            {
+                using (StreamReader directoryListResponseReader = new StreamReader(directoryListResponse.GetResponseStream()))
+                {
+                    string responseString = directoryListResponseReader.ReadToEnd();
+                    string[] results = responseString.Split(new string[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries);
+                    return results;
+                }
+            }
+        }
+
+        public static string GetFTPFile(string address)
+        {
+            string result = "";
+
+            // Get the object used to communicate with the server.
+            FtpWebRequest directoryDownloadRequest = (FtpWebRequest)WebRequest.Create(address);
+            directoryDownloadRequest.Method = WebRequestMethods.Ftp.DownloadFile;
+
+            // This example assumes the FTP site uses anonymous logon.
+            directoryDownloadRequest.Credentials = new NetworkCredential("ftpuser", "ftpuser");
+            directoryDownloadRequest.UsePassive = false;
+
+            FtpWebResponse response = (FtpWebResponse)directoryDownloadRequest.GetResponse();
+
+            using (Stream responseStream = response.GetResponseStream())
+            {
+                using (StreamReader reader = new StreamReader(responseStream))
+                {
+                    result = reader.ReadToEnd();
+                    Console.WriteLine(result);
+
+                    Console.WriteLine($"Download Complete, status {response.StatusDescription}");
+                }
+            }
+            response.Close();
+
+            return result;
+        }
+
+        public static void DownloadNewFiles()
+        {
+            string[] files = GetDirectoryListing();
+            string[] details;
+            foreach (string s in files)
+            {
+                details = ParseTextString(s);
+
+                string date = ParseDate(details[0]);
+                if (Path.GetExtension(details[1]).Contains("CSV"))
+                {
+                    string localfile = $" {Properties.Settings.Default.BaseDir}\\{date}.CSV";
+                    if (!File.Exists(localfile))
+                    {
+                        try
+                        {
+                            string info = GetFTPFile($"ftp://10.13.10.102/{details[1]}");
+                            File.WriteAllLines(localfile, new string[] { info.Trim() });
+                        }
+                        catch (Exception ex)
+                        {
+                            Debug.WriteLine(ex.Message);
+                        }
+                    }
+                }
+            }
+        }
+
+        private static string ParseDate(string raw)
+        {
+            //string temp = "19 May 2020";
+            string[] temp = raw.Split(' ');
+
+            switch (temp[1])
+            {
+                case "May":
+                    temp[1] = "05";
+                    break;
+
+                case "Jun":
+                    temp[1] = "06";
+                    break;
+            }
+
+            string result = $"{temp[2]}_{temp[1]}_{temp[0]}";
+
+            return result;
+        }
+
+        private static string[] ParseTextString(string RAW)
+        {
+            string temp = $" - rw-r--r--" +
+                $"1" +
+                $"ftp" +
+                $"ftp" +
+                $"" +
+                $"" +
+                $"" +
+                $"" +
+                $"" +
+                $"" +
+                $"" +
+                $"" +
+                $"" +
+                $"" +
+                $"3100" +
+                $"May" +
+                $"13" +
+                $"22:44" +
+                $"MAN0016.CSV";
+
+            string[] result = RAW.Split(' ');
+
+            return new string[] { $"{result[16]} {result[15]} {DateTime.Now.Year}", result[18] };
+        }
+
     }
 }
