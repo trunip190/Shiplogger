@@ -5,5 +5,17 @@
     <Setting Name="BaseDir" Type="System.String" Scope="User">
       <Value Profile="(Default)">P:\Public\Shipping\purofiles</Value>
     </Setting>
+    <Setting Name="FTPAddress" Type="System.String" Scope="User">
+      <Value Profile="(Default)">ftp://10.13.10.102</Value>
+    </Setting>
+    <Setting Name="FTPUser" Type="System.String" Scope="User">
+      <Value Profile="(Default)">ftpuser</Value>
+    </Setting>
+    <Setting Name="FTPPassword" Type="System.String" Scope="User">
+      <Value Profile="(Default)">ftpuser</Value>
+    </Setting>
+    <Setting Name="FTPPort" Type="System.String" Scope="User">
+      <Value Profile="(Default)">21</Value>
+    </Setting>
   </Settings>
 </SettingsFile>

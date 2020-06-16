@@ -1,20 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Data;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using Shiplogger.Properties;
 using System.Net;
-using System.Runtime.Remoting.Messaging;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
-using System.Windows.Forms.VisualStyles;
 
 namespace Shiplogger
-{
+{    
     public partial class Form1 : Form
     {
         private string FilterCode = "";
@@ -30,10 +26,12 @@ namespace Shiplogger
             string s = $"{Environment.CurrentDirectory}\\purofiles\\";
             if ( Directory.Exists(s))
             {
-                Properties.Settings.Default.BaseDir = s;
+                Settings.Default.BaseDir = s;
+                Settings.Default.Save();
             }
         }
 
+        #region Methods
         public bool PopulateFiles(string location)
         {
             string[] _files = Directory.GetFiles(location);
@@ -84,7 +82,7 @@ namespace Shiplogger
                     Text = Path.GetFileNameWithoutExtension(s),
                     ForeColor = Color.Black,
                 };
-                Entry.Text = ParseDate(s).ToLongDateString();
+                Entry.Text = ParseDate(s).ToString("ddd dd MMMM yyyy");
 
                 if ( ContainsFilterCode(s))
                 {
@@ -110,12 +108,10 @@ namespace Shiplogger
             if (FileLocation == "")
                 return; ;
 
-
             string[] Lines = File.ReadAllLines(FileLocation);
 
             Entries = ParseEntries(Lines, ParseDate(FileLocation)).OrderBy(o => o.CustomerCode).ToList();
             string[] ColumnsToAdd = Lines[0].Split(',');
-
 
             // Add in Date field.
             lvEntries.Columns.Add("Date");
@@ -194,44 +190,46 @@ namespace Shiplogger
             return false;
         }
 
-        private void btnPick_Click(object sender, EventArgs e)
-        {
-            if (!CheckDirectories())
-            {
-                if (fbdFolder.ShowDialog() == DialogResult.OK)
-                {
-                    WorkingDir = fbdFolder.SelectedPath;
-                    txtAddress.Text = fbdFolder.SelectedPath;
-                }
-                else
-                {
-                    return;
-                }
-            }
-
-            UpdateListBox();
-        }
-
         public bool CheckDirectories()
         {
-            if (Directory.Exists(txtAddress.Text))
+            if (Directory.Exists(txtLocation.Text))
             {
-                WorkingDir = txtAddress.Text;
+                WorkingDir = txtLocation.Text;
                 return true;
             }
 
-            if (Directory.Exists(Properties.Settings.Default.BaseDir))
+            if (Directory.Exists(Settings.Default.BaseDir))
             {
-                WorkingDir = Properties.Settings.Default.BaseDir;
-                txtAddress.Text = Properties.Settings.Default.BaseDir;
+                WorkingDir = Settings.Default.BaseDir;
+                txtLocation.Text = Settings.Default.BaseDir;
                 return true;
             }
 
 
             return false;
         }
+        
+        public bool ExportFile(string[] lines, string location)
+        {
 
-        private void btnFilter_Click(object sender, EventArgs e)
+            //need to test in a safe environment
+            DebugWindow window = new DebugWindow();
+            window.Show();
+            window.LoadString(lines);
+            return false;
+
+            if ( File.Exists(location))
+            {
+                File.WriteAllLines(location, lines);
+                return true;
+            }
+
+            return false;
+        }
+        #endregion
+
+        #region Events
+        private void BtnFilter_Click(object sender, EventArgs e)
         {
             FilterCode = txtCustomer.Text.ToLower();
             OrderNo = txtOrder.Text.ToLower();
@@ -241,7 +239,7 @@ namespace Shiplogger
             UpdateLVEntries();
         }
 
-        private void lvDates_SelectedIndexChanged(object sender, EventArgs e)
+        private void LvDates_SelectedIndexChanged(object sender, EventArgs e)
         {
             if (lvDates.SelectedItems.Count <1 || lvDates.SelectedItems[0].ToString() == "")
                 return;
@@ -251,35 +249,27 @@ namespace Shiplogger
             UpdateLVEntries();
         }
 
-        private void txtCustomer_PreviewKeyDown(object sender, PreviewKeyDownEventArgs e)
+        private void TxtFilter_PreviewKeyDown(object sender, PreviewKeyDownEventArgs e)
         {
-            
-
             if (e.KeyCode == Keys.Enter)
-            {
-                if ((sender as TextBox).Text == "FTP")
-                {
-                    (sender as TextBox).Text = "";
-                    FTPForm1 newform = new FTPForm1();
-                    if ( newform.ShowDialog() == DialogResult.OK)
-                    {
-                        btnPick_Click(sender, e);
-                    }
-                    return;
-                }
-
-                btnFilter_Click(sender, e);
-                
-            }
+                BtnFilter_Click(sender, e);
+            
         }
 
-        private void txtAddress_PreviewKeyDown(object sender, PreviewKeyDownEventArgs e)
+        private void TxtLocation_PreviewKeyDown(object sender, PreviewKeyDownEventArgs e)
         {
             if (e.KeyCode == Keys.Enter)
-                btnPick_Click(sender, e);
+                BtnPick_Click(sender, e);
         }
 
         private void Form1_Load(object sender, EventArgs e)
+        {
+            
+
+            BtnPick_Click(sender, e);
+        }
+
+        private void BtnPick_Click(object sender, EventArgs e)
         {
             try
             {
@@ -290,16 +280,54 @@ namespace Shiplogger
                 Debug.WriteLine(ex.Message);
             }
 
-            btnPick_Click(sender, e);
+            if (!CheckDirectories())
+            {
+                if (fbdFolder.ShowDialog() == DialogResult.OK)
+                {
+                    WorkingDir = fbdFolder.SelectedPath;
+                    txtLocation.Text = fbdFolder.SelectedPath;
+                }
+                else
+                {
+                    return;
+                }
+            }
+
+            UpdateListBox();
         }
 
-        private void lvEntries_DoubleClick(object sender, EventArgs e)
+        private void LvEntries_DoubleClick(object sender, EventArgs e)
         {
             if (lvEntries.SelectedItems.Count < 1||lvEntries.SelectedItems[0].SubItems.Count < 10|| lvEntries.SelectedItems[0].SubItems[10].Text == "")
                 return;
 
             Process.Start($"https://www.purolator.com/en/shipping/tracker?pin={lvEntries.SelectedItems[0].SubItems[10].Text}");
             //Process.Start($"https://www.purolator.com/en/ship-track/tracking-details.page?pin={lvEntries.SelectedItems[0].SubItems[10].Text}");
+        }
+
+        private void BtnEdit_Click(object sender, EventArgs e)
+        {
+            if ( lvEntries.SelectedItems.Count > 0)
+            {
+
+            }
+        }
+
+        #endregion
+
+        private void LvDates_MouseUp(object sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Right && lvDates.SelectedItems.Count > 0)
+            {
+                List<string> tempEntries = new List<string>();
+                foreach ( ShippingEntry entry in Entries)
+                {
+                    tempEntries.Add(entry.ToString());
+                }
+                tempEntries.Reverse();
+
+                ExportFile(tempEntries.ToArray(), FileLocation);
+            }
         }
     }
 
@@ -430,7 +458,15 @@ namespace Shiplogger
             return result;
         }
 
-        
+        public override string ToString()
+        {
+            return $"{ShipmentCode},{CustomerCode},{CustomerName}," +
+                $"{Reference1},{Reference2},{Reference3},{Reference4},{Reference5}," +
+                $"{PackagePIN},{SPI},{TotalCostwithTax},{TotalCostBeforeTax}," +
+                $"{GSTAmount},{HSTAmount},{QSTAmount},{BaseCost}," +
+                $"{ResidentialAreaCharge},{FuelSurcharge},{ExpCheqSurcharge},{ReferencePerPiece}";
+
+        } 
     }
 
     public static class FTPMethods
@@ -438,11 +474,11 @@ namespace Shiplogger
         public static string[] GetDirectoryListing()
         {
             // Get the object used to communicate with the server.
-            FtpWebRequest directoryListRequest = (FtpWebRequest)WebRequest.Create(@"ftp://10.13.10.102:21");
+            FtpWebRequest directoryListRequest = (FtpWebRequest)WebRequest.Create($"{Settings.Default.FTPAddress}:{Settings.Default.FTPPort}");
             directoryListRequest.Method = WebRequestMethods.Ftp.ListDirectoryDetails;
 
             // This example assumes the FTP site uses anonymous logon.
-            directoryListRequest.Credentials = new NetworkCredential("ftpuser", "ftpuser");
+            directoryListRequest.Credentials = new NetworkCredential(Settings.Default.FTPUser, Settings.Default.FTPPassword);
             directoryListRequest.UsePassive = false;
 
             using (FtpWebResponse directoryListResponse = (FtpWebResponse)directoryListRequest.GetResponse())
@@ -465,7 +501,7 @@ namespace Shiplogger
             directoryDownloadRequest.Method = WebRequestMethods.Ftp.DownloadFile;
 
             // This example assumes the FTP site uses anonymous logon.
-            directoryDownloadRequest.Credentials = new NetworkCredential("ftpuser", "ftpuser");
+            directoryDownloadRequest.Credentials = new NetworkCredential(Settings.Default.FTPUser, Settings.Default.FTPPassword);
             directoryDownloadRequest.UsePassive = false;
 
             FtpWebResponse response = (FtpWebResponse)directoryDownloadRequest.GetResponse();
@@ -496,12 +532,12 @@ namespace Shiplogger
                 string date = ParseDate(details[0]);
                 if (Path.GetExtension(details[1]).Contains("CSV"))
                 {
-                    string localfile = $" {Properties.Settings.Default.BaseDir}\\{date}.CSV";
+                    string localfile = $" {Settings.Default.BaseDir}\\{date}.CSV";
                     if (!File.Exists(localfile))
                     {
                         try
                         {
-                            string info = GetFTPFile($"ftp://10.13.10.102/{details[1]}");
+                            string info = GetFTPFile($"{Settings.Default.FTPAddress}/{details[1]}");
                             File.WriteAllLines(localfile, new string[] { info.Trim() });
                         }
                         catch (Exception ex)
@@ -536,25 +572,25 @@ namespace Shiplogger
 
         private static string[] ParseTextString(string RAW)
         {
-            string temp = $" - rw-r--r--" +
-                $"1" +
-                $"ftp" +
-                $"ftp" +
-                $"" +
-                $"" +
-                $"" +
-                $"" +
-                $"" +
-                $"" +
-                $"" +
-                $"" +
-                $"" +
-                $"" +
-                $"3100" +
-                $"May" +
-                $"13" +
-                $"22:44" +
-                $"MAN0016.CSV";
+            //string temp = $" - rw-r--r--" +
+            //    $"1" +
+            //    $"ftp" +
+            //    $"ftp" +
+            //    $"" +
+            //    $"" +
+            //    $"" +
+            //    $"" +
+            //    $"" +
+            //    $"" +
+            //    $"" +
+            //    $"" +
+            //    $"" +
+            //    $"" +
+            //    $"3100" +
+            //    $"May" +
+            //    $"13" +
+            //    $"22:44" +
+            //    $"MAN0016.CSV";
 
             string[] result = RAW.Split(' ');
 
@@ -562,4 +598,5 @@ namespace Shiplogger
         }
 
     }
+
 }
