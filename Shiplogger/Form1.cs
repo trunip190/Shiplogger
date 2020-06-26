@@ -208,23 +208,53 @@ namespace Shiplogger
 
             return false;
         }
-        
-        public bool ExportFile(string[] lines, string location)
+
+        public bool ExportFile(string location, List<string> lines)
         {
+            bool result = false;
+            string columns = @"Shipment Code,Customer Code,Customer Name,Reference 1,Reference 2,Reference 3,Reference 4,Reference 5,Package PIN,Shipment/Piece/Item (S/P/I),Total Cost with Tax,Total Cost Before Tax,GST Amount,HST Amount,QST Amount,Base Cost,Residential Area Charge,Fuel Surcharge,ExpCheq Surcharge,Reference Per Piece";
 
-            //need to test in a safe environment
-            DebugWindow window = new DebugWindow();
-            window.Show();
-            window.LoadString(lines);
-            return false;
-
-            if ( File.Exists(location))
+            //need to test in a safe environment            
+            if (File.Exists(location))
             {
-                File.WriteAllLines(location, lines);
-                return true;
+                File.Delete(location);
+                result = true;
+            }
+                
+            using (StreamWriter writer = File.CreateText(location))
+            {
+                writer.WriteLine(columns);
+                foreach ( string s in lines)
+                {
+                    writer.WriteLine(s);
+                }
             }
 
-            return false;
+            return result;
+        }
+
+        public bool ExportFile(string location, List<ShippingEntry> _Entries)
+        {
+            bool result = false;
+            string columns = @"Shipment Code,Customer Code,Customer Name,Reference 1,Reference 2,Reference 3,Reference 4,Reference 5,Package PIN,Shipment/Piece/Item (S/P/I),Total Cost with Tax,Total Cost Before Tax,GST Amount,HST Amount,QST Amount,Base Cost,Residential Area Charge,Fuel Surcharge,ExpCheq Surcharge,Reference Per Piece";
+
+            //need to test in a safe environment            
+            if (File.Exists(location))
+            {
+                File.Delete(location);
+                result = true;
+            }
+
+            using (StreamWriter writer = File.CreateText(location))
+            {
+                writer.WriteLine(columns);
+                foreach (ShippingEntry Entry in _Entries)
+                {
+                    writer.WriteLine(Entry.ToString());
+                }
+            }
+
+            return result;
         }
         #endregion
 
@@ -305,30 +335,64 @@ namespace Shiplogger
             //Process.Start($"https://www.purolator.com/en/ship-track/tracking-details.page?pin={lvEntries.SelectedItems[0].SubItems[10].Text}");
         }
 
-        private void BtnEdit_Click(object sender, EventArgs e)
+        #region ToolStrip
+        private void SortEntriesToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if ( lvEntries.SelectedItems.Count > 0)
-            {
+            string _new = $"{Settings.Default.BaseDir}\\Archive\\{Path.GetFileName(FileLocation)}";
+            string _folder = Path.GetDirectoryName(_new);
 
+            if ( !File.Exists(_new))
+            {
+                Directory.CreateDirectory(_folder);
+                File.Move(FileLocation, _new);
             }
+            
+
+            ExportFile(FileLocation, FTPMethods.SortFile(Entries));
+            //ExportFile(FileLocation, FTPMethods.SortFile(Entries));
         }
+
+        private void OpenFileToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            Process.Start(FileLocation);
+        }
+
+        private void EditEntryToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (lvEntries.SelectedItems.Count < 1)
+                return;
+
+            int index = lvEntries.SelectedIndices[0];
+            Color shading = lvEntries.SelectedItems[0].BackColor;
+
+            ShippingEntry Entry = Entries[index];
+            DebugWindow debugWindow = new DebugWindow(Entry);
+            if (debugWindow.ShowDialog() == DialogResult.OK)
+            {
+                Entry.LoadString(debugWindow.Entry.ToString());
+                
+                lvEntries.Items.RemoveAt(index);
+                ListViewItem item = debugWindow.Entry.ToListViewItem();
+                item.BackColor = shading;
+                lvEntries.Items.Insert(index, item);
+
+                Entries.RemoveAt(index);
+                Entries.Insert(index, debugWindow.Entry);
+
+                ExportFile(FileLocation, Entries);
+            }
+
+        }
+
+        private void AddNewEntryToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+
+        }
+        #endregion
+
 
         #endregion
 
-        private void LvDates_MouseUp(object sender, MouseEventArgs e)
-        {
-            if (e.Button == MouseButtons.Right && lvDates.SelectedItems.Count > 0)
-            {
-                List<string> tempEntries = new List<string>();
-                foreach ( ShippingEntry entry in Entries)
-                {
-                    tempEntries.Add(entry.ToString());
-                }
-                tempEntries.Reverse();
-
-                ExportFile(tempEntries.ToArray(), FileLocation);
-            }
-        }
     }
 
     public class ShippingEntry
@@ -382,51 +446,9 @@ namespace Shiplogger
 
         public ShippingEntry(DateTime date, string item)
         {
-            if (!item.Contains(','))
-                return;
-
-            string[] split = item.Split(',');
-
             Date = date;
-            ShipmentCode = split[0];
-            CustomerCode = split[1];
-            CustomerName = split[2];
-            Reference1 = split[3];
-            Reference2 = split[4];
-            Reference3 = split[5];
-            Reference4 = split[6];
-            Reference5 = split[7];
 
-            if (split.Length < 21)
-            {
-                PackagePIN = split[8];
-                SPI = split[9];
-                TotalCostwithTax = split[10];
-                TotalCostBeforeTax = split[11];
-                GSTAmount = split[12];
-                HSTAmount = split[13];
-                QSTAmount = split[14];
-                BaseCost = split[15];
-                ResidentialAreaCharge = split[16];
-                FuelSurcharge = split[17];
-                ExpCheqSurcharge = split[18];
-                ReferencePerPiece = split[19];
-            }
-            else
-            {
-                PackagePIN = split[9];
-                SPI = split[10];
-                TotalCostwithTax = split[11];
-                TotalCostBeforeTax = split[12];
-                GSTAmount = split[13];
-                HSTAmount = split[14];
-                QSTAmount = split[15];
-                BaseCost = split[16];
-                ResidentialAreaCharge = split[17];
-                FuelSurcharge = split[18];
-                ExpCheqSurcharge = split[19];
-                ReferencePerPiece = split[20];
-            }
+            LoadString(item);   
         }
 
         public ListViewItem ToListViewItem()
@@ -467,6 +489,54 @@ namespace Shiplogger
                 $"{ResidentialAreaCharge},{FuelSurcharge},{ExpCheqSurcharge},{ReferencePerPiece}";
 
         } 
+    
+        public void LoadString(string item)
+        {
+            if (!item.Contains(','))
+                return;
+
+            string[] split = item.Split(',');
+
+            ShipmentCode = split[0];
+            CustomerCode = split[1];
+            CustomerName = split[2];
+            Reference1 = split[3];
+            Reference2 = split[4];
+            Reference3 = split[5];
+            Reference4 = split[6];
+            Reference5 = split[7];
+
+            if (split.Length < 21)
+            {
+                PackagePIN = split[8];
+                SPI = split[9];
+                TotalCostwithTax = split[10];
+                TotalCostBeforeTax = split[11];
+                GSTAmount = split[12];
+                HSTAmount = split[13];
+                QSTAmount = split[14];
+                BaseCost = split[15];
+                ResidentialAreaCharge = split[16];
+                FuelSurcharge = split[17];
+                ExpCheqSurcharge = split[18];
+                ReferencePerPiece = split[19];
+            }
+            else
+            {
+                PackagePIN = split[9];
+                SPI = split[10];
+                TotalCostwithTax = split[11];
+                TotalCostBeforeTax = split[12];
+                GSTAmount = split[13];
+                HSTAmount = split[14];
+                QSTAmount = split[15];
+                BaseCost = split[16];
+                ResidentialAreaCharge = split[17];
+                FuelSurcharge = split[18];
+                ExpCheqSurcharge = split[19];
+                ReferencePerPiece = split[20];
+            }
+        }
     }
 
     public static class FTPMethods
@@ -595,6 +665,34 @@ namespace Shiplogger
             string[] result = RAW.Split(' ');
 
             return new string[] { $"{result[16]} {result[15]} {DateTime.Now.Year}", result[18] };
+        }
+
+        public static List<ShippingEntry> ParseRawString(string raw, DateTime Date)
+        {
+            string[] split = raw.Split(new string[] { "\r\n" }, StringSplitOptions.RemoveEmptyEntries);
+            List<ShippingEntry> Entries = new List<ShippingEntry>();
+
+            for (int i = 1; i < split.Length; i++)
+            {
+                ShippingEntry Entry = new ShippingEntry(Date, split[i]);
+                Entries.Add(Entry);
+            }
+
+            return Entries;
+        }
+
+        public static List<string> SortFile(List<ShippingEntry> Entries)
+        {
+            List<string> results = new List<string>();
+
+
+            foreach (ShippingEntry E in Entries.OrderBy(o=>o.CustomerName))
+            {
+                results.Add(E.ToString());
+            }
+
+
+            return results;
         }
 
     }

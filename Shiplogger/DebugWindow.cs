@@ -12,26 +12,89 @@ namespace Shiplogger
 {
     public partial class DebugWindow : Form
     {
-        private readonly List<string> lines = new List<string>();
+        public ShippingEntry Entry;
 
         public DebugWindow()
         {
             InitializeComponent();
         }
 
-        public void LoadString(string[] s)
+
+        public DebugWindow(ShippingEntry _Entry)
         {
-            lines.AddRange(s);
-            UpdateText();
+            InitializeComponent();
+            Entry = _Entry;
         }
 
-        public void UpdateText()
+        private void DebugWindow_Load(object sender, EventArgs e)
         {
-            for (int i = lines.Count - 1; i > 0; i--)
+            txtCourier.Text = Entry.CourierCompany;
+            txtName.Text = Entry.CustomerName;
+            txtID.Text = Entry.CustomerCode;
+            txtBOL.Text = Entry.PackagePIN;
+            if (Entry.SPI == "S")
+                cbLeadpin.Checked = true;
+
+            txtRefs.Text = $"{Entry.Reference1} {Entry.Reference2} {Entry.Reference3} {Entry.Reference4} {Entry.Reference5}"; 
+        }
+
+        private void BtnCancel_Click(object sender, EventArgs e)
+        {
+           DialogResult = DialogResult.Cancel;
+           Close();
+        }
+
+        private void BtnSave_Click(object sender, EventArgs e)
+        {
+            SaveEntry();
+            DialogResult = DialogResult.OK;
+            Close();
+        }
+
+        private void SaveEntry()
+        {
+            Entry.CourierCompany = txtCourier.Text;
+
+            Entry.CustomerName = txtName.Text;
+            Entry.CustomerCode = txtID.Text;
+            Entry.PackagePIN = txtBOL.Text;
+
+            if (cbLeadpin.Checked == true)
+                Entry.SPI = "S";
+            else
+                Entry.SPI = "P";
+
+            string[] refs = txtRefs.Text.Split(new string[] { " " }, StringSplitOptions.RemoveEmptyEntries);
+            for ( int i = 0; i < refs.Length;i++)
             {
-                richTextBox1.AppendText($"{lines[i]}\r\n");
-                lines.RemoveAt(i);
+                switch (i)
+                {
+                    case 0:
+                        Entry.Reference1 = refs[i];
+                        break;
+
+                    case 1:
+                        Entry.Reference2 = refs[i];
+                        break;
+
+                    case 2:
+                        Entry.Reference3 = refs[i];
+                        break;
+
+                    case 3:
+                        Entry.Reference4 = refs[i];
+                        break;
+
+                    case 4:
+                        Entry.Reference5 = refs[i];
+                        break;
+
+                    default:
+                        Entry.Reference5 += "$ {refs[i]}";
+                        break;
+                }
             }
+
         }
     }
 }

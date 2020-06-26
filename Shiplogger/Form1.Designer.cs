@@ -33,6 +33,9 @@
             this.lvEntries = new System.Windows.Forms.ListView();
             this.lvDates = new System.Windows.Forms.ListView();
             this.columnHeader1 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.ContextDays = new System.Windows.Forms.ContextMenuStrip(this.components);
+            this.openFileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.sortEntriesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.txtLocation = new System.Windows.Forms.TextBox();
             this.btnPick = new System.Windows.Forms.Button();
             this.fbdFolder = new System.Windows.Forms.FolderBrowserDialog();
@@ -49,14 +52,20 @@
             this.workerFTP = new System.ComponentModel.BackgroundWorker();
             this.panel2 = new System.Windows.Forms.Panel();
             this.btnEdit = new System.Windows.Forms.Button();
+            this.ContextEntries = new System.Windows.Forms.ContextMenuStrip(this.components);
+            this.addNewEntryToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.editEntryToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.ContextDays.SuspendLayout();
             this.pnDates.SuspendLayout();
             this.pnEntries.SuspendLayout();
             this.panel1.SuspendLayout();
             this.panel2.SuspendLayout();
+            this.ContextEntries.SuspendLayout();
             this.SuspendLayout();
             // 
             // lvEntries
             // 
+            this.lvEntries.ContextMenuStrip = this.ContextEntries;
             this.lvEntries.Dock = System.Windows.Forms.DockStyle.Fill;
             this.lvEntries.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lvEntries.FullRowSelect = true;
@@ -74,6 +83,7 @@
             // 
             this.lvDates.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
             this.columnHeader1});
+            this.lvDates.ContextMenuStrip = this.ContextDays;
             this.lvDates.Dock = System.Windows.Forms.DockStyle.Fill;
             this.lvDates.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lvDates.HideSelection = false;
@@ -85,12 +95,34 @@
             this.lvDates.UseCompatibleStateImageBehavior = false;
             this.lvDates.View = System.Windows.Forms.View.Details;
             this.lvDates.SelectedIndexChanged += new System.EventHandler(this.LvDates_SelectedIndexChanged);
-            this.lvDates.MouseUp += new System.Windows.Forms.MouseEventHandler(this.LvDates_MouseUp);
             // 
             // columnHeader1
             // 
             this.columnHeader1.Text = "Date";
             this.columnHeader1.Width = 150;
+            // 
+            // ContextDays
+            // 
+            this.ContextDays.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.openFileToolStripMenuItem,
+            this.sortEntriesToolStripMenuItem});
+            this.ContextDays.Name = "cmSort";
+            this.ContextDays.Size = new System.Drawing.Size(134, 48);
+            this.ContextDays.Text = "Actions";
+            // 
+            // openFileToolStripMenuItem
+            // 
+            this.openFileToolStripMenuItem.Name = "openFileToolStripMenuItem";
+            this.openFileToolStripMenuItem.Size = new System.Drawing.Size(133, 22);
+            this.openFileToolStripMenuItem.Text = "Open File";
+            this.openFileToolStripMenuItem.Click += new System.EventHandler(this.OpenFileToolStripMenuItem_Click);
+            // 
+            // sortEntriesToolStripMenuItem
+            // 
+            this.sortEntriesToolStripMenuItem.Name = "sortEntriesToolStripMenuItem";
+            this.sortEntriesToolStripMenuItem.Size = new System.Drawing.Size(133, 22);
+            this.sortEntriesToolStripMenuItem.Text = "Sort Entries";
+            this.sortEntriesToolStripMenuItem.Click += new System.EventHandler(this.SortEntriesToolStripMenuItem_Click);
             // 
             // txtLocation
             // 
@@ -255,7 +287,29 @@
             this.btnEdit.TabIndex = 2;
             this.btnEdit.Text = "Edit Entry";
             this.btnEdit.UseVisualStyleBackColor = true;
-            this.btnEdit.Click += new System.EventHandler(this.BtnEdit_Click);
+            this.btnEdit.Click += new System.EventHandler(this.EditEntryToolStripMenuItem_Click);
+            // 
+            // ContextEntries
+            // 
+            this.ContextEntries.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.addNewEntryToolStripMenuItem,
+            this.editEntryToolStripMenuItem});
+            this.ContextEntries.Name = "contextMenuStrip1";
+            this.ContextEntries.Size = new System.Drawing.Size(154, 48);
+            // 
+            // addNewEntryToolStripMenuItem
+            // 
+            this.addNewEntryToolStripMenuItem.Name = "addNewEntryToolStripMenuItem";
+            this.addNewEntryToolStripMenuItem.Size = new System.Drawing.Size(153, 22);
+            this.addNewEntryToolStripMenuItem.Text = "Add New Entry";
+            this.addNewEntryToolStripMenuItem.Click += new System.EventHandler(this.AddNewEntryToolStripMenuItem_Click);
+            // 
+            // editEntryToolStripMenuItem
+            // 
+            this.editEntryToolStripMenuItem.Name = "editEntryToolStripMenuItem";
+            this.editEntryToolStripMenuItem.Size = new System.Drawing.Size(153, 22);
+            this.editEntryToolStripMenuItem.Text = "Edit Entry";
+            this.editEntryToolStripMenuItem.Click += new System.EventHandler(this.EditEntryToolStripMenuItem_Click);
             // 
             // Form1
             // 
@@ -272,12 +326,14 @@
             this.Name = "Form1";
             this.Text = "Shiplog";
             this.Load += new System.EventHandler(this.Form1_Load);
+            this.ContextDays.ResumeLayout(false);
             this.pnDates.ResumeLayout(false);
             this.pnEntries.ResumeLayout(false);
             this.panel1.ResumeLayout(false);
             this.panel1.PerformLayout();
             this.panel2.ResumeLayout(false);
             this.panel2.PerformLayout();
+            this.ContextEntries.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
@@ -302,6 +358,12 @@
         private System.ComponentModel.BackgroundWorker workerFTP;
         private System.Windows.Forms.Panel panel2;
         private System.Windows.Forms.Button btnEdit;
+        private System.Windows.Forms.ContextMenuStrip ContextDays;
+        private System.Windows.Forms.ToolStripMenuItem sortEntriesToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem openFileToolStripMenuItem;
+        private System.Windows.Forms.ContextMenuStrip ContextEntries;
+        private System.Windows.Forms.ToolStripMenuItem addNewEntryToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem editEntryToolStripMenuItem;
     }
 }
 
