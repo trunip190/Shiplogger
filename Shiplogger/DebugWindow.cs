@@ -17,8 +17,8 @@ namespace Shiplogger
         public DebugWindow()
         {
             InitializeComponent();
+            Entry = new ShippingEntry();
         }
-
 
         public DebugWindow(ShippingEntry _Entry)
         {
@@ -28,6 +28,7 @@ namespace Shiplogger
 
         private void DebugWindow_Load(object sender, EventArgs e)
         {
+            dtpDate.Value = Entry.Date;
             txtCourier.Text = Entry.CourierCompany;
             txtName.Text = Entry.CustomerName;
             txtID.Text = Entry.CustomerCode;
@@ -35,13 +36,13 @@ namespace Shiplogger
             if (Entry.SPI == "S")
                 cbLeadpin.Checked = true;
 
-            txtRefs.Text = $"{Entry.Reference1} {Entry.Reference2} {Entry.Reference3} {Entry.Reference4} {Entry.Reference5}"; 
+            txtRefs.Text = $"{Entry.Reference1} {Entry.Reference2} {Entry.Reference3} {Entry.Reference4} {Entry.Reference5}";
         }
 
         private void BtnCancel_Click(object sender, EventArgs e)
         {
-           DialogResult = DialogResult.Cancel;
-           Close();
+            DialogResult = DialogResult.Cancel;
+            Close();
         }
 
         private void BtnSave_Click(object sender, EventArgs e)
@@ -54,7 +55,7 @@ namespace Shiplogger
         private void SaveEntry()
         {
             Entry.CourierCompany = txtCourier.Text;
-
+            Entry.Date = dtpDate.Value;
             Entry.CustomerName = txtName.Text;
             Entry.CustomerCode = txtID.Text;
             Entry.PackagePIN = txtBOL.Text;
@@ -65,7 +66,7 @@ namespace Shiplogger
                 Entry.SPI = "P";
 
             string[] refs = txtRefs.Text.Split(new string[] { " " }, StringSplitOptions.RemoveEmptyEntries);
-            for ( int i = 0; i < refs.Length;i++)
+            for (int i = 0; i < refs.Length; i++)
             {
                 switch (i)
                 {
@@ -90,7 +91,7 @@ namespace Shiplogger
                         break;
 
                     default:
-                        Entry.Reference5 += "$ {refs[i]}";
+                        Entry.Reference5 += $" {refs[i]}";
                         break;
                 }
             }

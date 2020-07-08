@@ -41,13 +41,15 @@
             this.cbLeadpin = new System.Windows.Forms.CheckBox();
             this.btnSave = new System.Windows.Forms.Button();
             this.btnCancel = new System.Windows.Forms.Button();
+            this.label5 = new System.Windows.Forms.Label();
+            this.dtpDate = new System.Windows.Forms.DateTimePicker();
             this.SuspendLayout();
             // 
             // label1
             // 
             this.label1.AutoSize = true;
             this.label1.Font = new System.Drawing.Font("Microsoft Sans Serif", 11F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label1.Location = new System.Drawing.Point(16, 15);
+            this.label1.Location = new System.Drawing.Point(284, 12);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(57, 18);
             this.label1.TabIndex = 0;
@@ -67,7 +69,7 @@
             // 
             this.label3.AutoSize = true;
             this.label3.Font = new System.Drawing.Font("Microsoft Sans Serif", 11F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label3.Location = new System.Drawing.Point(291, 15);
+            this.label3.Location = new System.Drawing.Point(293, 42);
             this.label3.Name = "label3";
             this.label3.Size = new System.Drawing.Size(48, 18);
             this.label3.TabIndex = 2;
@@ -77,17 +79,17 @@
             // 
             this.label4.AutoSize = true;
             this.label4.Font = new System.Drawing.Font("Microsoft Sans Serif", 11F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label4.Location = new System.Drawing.Point(16, 78);
+            this.label4.Location = new System.Drawing.Point(16, 105);
             this.label4.Name = "label4";
-            this.label4.Size = new System.Drawing.Size(84, 18);
+            this.label4.Size = new System.Drawing.Size(74, 18);
             this.label4.TabIndex = 3;
-            this.label4.Text = "References";
+            this.label4.Text = "Order No.";
             // 
             // label9
             // 
             this.label9.AutoSize = true;
             this.label9.Font = new System.Drawing.Font("Microsoft Sans Serif", 11F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label9.Location = new System.Drawing.Point(291, 48);
+            this.label9.Location = new System.Drawing.Point(16, 75);
             this.label9.Name = "label9";
             this.label9.Size = new System.Drawing.Size(38, 18);
             this.label9.TabIndex = 8;
@@ -96,53 +98,59 @@
             // txtCourier
             // 
             this.txtCourier.Font = new System.Drawing.Font("Microsoft Sans Serif", 11F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.txtCourier.Location = new System.Drawing.Point(133, 12);
+            this.txtCourier.Location = new System.Drawing.Point(347, 9);
             this.txtCourier.Name = "txtCourier";
-            this.txtCourier.Size = new System.Drawing.Size(152, 24);
-            this.txtCourier.TabIndex = 10;
+            this.txtCourier.Size = new System.Drawing.Size(178, 24);
+            this.txtCourier.TabIndex = 1;
             // 
             // txtID
             // 
+            this.txtID.AutoCompleteMode = System.Windows.Forms.AutoCompleteMode.Suggest;
+            this.txtID.AutoCompleteSource = System.Windows.Forms.AutoCompleteSource.HistoryList;
             this.txtID.Font = new System.Drawing.Font("Microsoft Sans Serif", 11F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.txtID.Location = new System.Drawing.Point(133, 42);
             this.txtID.Name = "txtID";
-            this.txtID.Size = new System.Drawing.Size(152, 24);
-            this.txtID.TabIndex = 11;
+            this.txtID.Size = new System.Drawing.Size(123, 24);
+            this.txtID.TabIndex = 2;
             // 
             // txtRefs
             // 
             this.txtRefs.Font = new System.Drawing.Font("Microsoft Sans Serif", 11F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.txtRefs.Location = new System.Drawing.Point(133, 75);
+            this.txtRefs.Location = new System.Drawing.Point(133, 102);
             this.txtRefs.Multiline = true;
             this.txtRefs.Name = "txtRefs";
             this.txtRefs.Size = new System.Drawing.Size(392, 41);
-            this.txtRefs.TabIndex = 12;
+            this.txtRefs.TabIndex = 5;
             // 
             // txtBOL
             // 
             this.txtBOL.Font = new System.Drawing.Font("Microsoft Sans Serif", 11F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.txtBOL.Location = new System.Drawing.Point(345, 45);
+            this.txtBOL.Location = new System.Drawing.Point(133, 72);
             this.txtBOL.Name = "txtBOL";
-            this.txtBOL.Size = new System.Drawing.Size(180, 24);
-            this.txtBOL.TabIndex = 17;
+            this.txtBOL.Size = new System.Drawing.Size(392, 24);
+            this.txtBOL.TabIndex = 4;
             // 
             // txtName
             // 
+            this.txtName.AutoCompleteMode = System.Windows.Forms.AutoCompleteMode.Suggest;
+            this.txtName.AutoCompleteSource = System.Windows.Forms.AutoCompleteSource.HistoryList;
             this.txtName.Font = new System.Drawing.Font("Microsoft Sans Serif", 11F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.txtName.Location = new System.Drawing.Point(345, 12);
+            this.txtName.Location = new System.Drawing.Point(347, 39);
             this.txtName.Name = "txtName";
-            this.txtName.Size = new System.Drawing.Size(180, 24);
-            this.txtName.TabIndex = 19;
+            this.txtName.Size = new System.Drawing.Size(178, 24);
+            this.txtName.TabIndex = 3;
             // 
             // cbLeadpin
             // 
             this.cbLeadpin.AutoSize = true;
             this.cbLeadpin.CheckAlign = System.Drawing.ContentAlignment.MiddleRight;
+            this.cbLeadpin.Checked = true;
+            this.cbLeadpin.CheckState = System.Windows.Forms.CheckState.Checked;
             this.cbLeadpin.Font = new System.Drawing.Font("Microsoft Sans Serif", 11F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.cbLeadpin.Location = new System.Drawing.Point(19, 127);
+            this.cbLeadpin.Location = new System.Drawing.Point(19, 156);
             this.cbLeadpin.Name = "cbLeadpin";
             this.cbLeadpin.Size = new System.Drawing.Size(95, 22);
-            this.cbLeadpin.TabIndex = 20;
+            this.cbLeadpin.TabIndex = 6;
             this.cbLeadpin.Text = "Lead PIN?";
             this.cbLeadpin.UseVisualStyleBackColor = true;
             // 
@@ -150,10 +158,10 @@
             // 
             this.btnSave.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.btnSave.Font = new System.Drawing.Font("Microsoft Sans Serif", 11F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnSave.Location = new System.Drawing.Point(371, 130);
+            this.btnSave.Location = new System.Drawing.Point(371, 153);
             this.btnSave.Name = "btnSave";
             this.btnSave.Size = new System.Drawing.Size(75, 24);
-            this.btnSave.TabIndex = 21;
+            this.btnSave.TabIndex = 7;
             this.btnSave.Text = "Save";
             this.btnSave.UseVisualStyleBackColor = true;
             this.btnSave.Click += new System.EventHandler(this.BtnSave_Click);
@@ -162,19 +170,39 @@
             // 
             this.btnCancel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.btnCancel.Font = new System.Drawing.Font("Microsoft Sans Serif", 11F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnCancel.Location = new System.Drawing.Point(452, 130);
+            this.btnCancel.Location = new System.Drawing.Point(452, 153);
             this.btnCancel.Name = "btnCancel";
             this.btnCancel.Size = new System.Drawing.Size(75, 24);
-            this.btnCancel.TabIndex = 22;
+            this.btnCancel.TabIndex = 8;
             this.btnCancel.Text = "Cancel";
             this.btnCancel.UseVisualStyleBackColor = true;
             this.btnCancel.Click += new System.EventHandler(this.BtnCancel_Click);
+            // 
+            // label5
+            // 
+            this.label5.AutoSize = true;
+            this.label5.Font = new System.Drawing.Font("Microsoft Sans Serif", 11F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label5.Location = new System.Drawing.Point(16, 12);
+            this.label5.Name = "label5";
+            this.label5.Size = new System.Drawing.Size(39, 18);
+            this.label5.TabIndex = 10;
+            this.label5.Text = "Date";
+            // 
+            // dtpDate
+            // 
+            this.dtpDate.Format = System.Windows.Forms.DateTimePickerFormat.Short;
+            this.dtpDate.Location = new System.Drawing.Point(133, 13);
+            this.dtpDate.Name = "dtpDate";
+            this.dtpDate.Size = new System.Drawing.Size(123, 20);
+            this.dtpDate.TabIndex = 0;
             // 
             // DebugWindow
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(539, 166);
+            this.ClientSize = new System.Drawing.Size(539, 189);
+            this.Controls.Add(this.dtpDate);
+            this.Controls.Add(this.label5);
             this.Controls.Add(this.btnCancel);
             this.Controls.Add(this.btnSave);
             this.Controls.Add(this.cbLeadpin);
@@ -211,5 +239,7 @@
         private System.Windows.Forms.CheckBox cbLeadpin;
         private System.Windows.Forms.Button btnSave;
         private System.Windows.Forms.Button btnCancel;
+        private System.Windows.Forms.Label label5;
+        private System.Windows.Forms.DateTimePicker dtpDate;
     }
 }

@@ -8,55 +8,130 @@ using System.Linq;
 using Shiplogger.Properties;
 using System.Net;
 using System.Windows.Forms;
+using System.CodeDom;
 
 namespace Shiplogger
-{    
+{
     public partial class Form1 : Form
     {
+        #region variables
         private string FilterCode = "";
         private string OrderNo = "";
+        private string FilterBOL = "";
         private List<string> LoadedFiles = new List<string>();
         private List<ShippingEntry> Entries = new List<ShippingEntry>();
         private string FileLocation = "";
         private string WorkingDir;
+        private readonly bool shpVersion = false;
+        private List<string> companies = new List<string>();
+        #endregion
 
+        #region Methods
         public Form1()
         {
+            Debug.WriteLine($"Form1");
             InitializeComponent();
+            shpVersion = Settings.Default.SHPMode;
+            BtnConvert.Enabled = Settings.Default.DebugMode;
             string s = $"{Environment.CurrentDirectory}\\purofiles\\";
-            if ( Directory.Exists(s))
+            if (Directory.Exists(s))
             {
                 Settings.Default.BaseDir = s;
                 Settings.Default.Save();
             }
         }
 
-        #region Methods
+        private void ConvertAll()
+        {
+            string[] files = Directory.GetFiles(WorkingDir, $"*.csv");
+            foreach (string s in files)
+            {
+                //UpdateLVEntries();
+
+                // Load lines and convert to List<ShippingEntry>.
+                string[] Lines = File.ReadAllLines(s);
+
+                //Load entries in file
+                List<ShippingEntry> Entries = ParseEntries(Lines, DateTime.Now, false).OrderBy(o => o.CustomerCode).ToList();
+
+                //set new file name
+                string _customFilename = s.Replace(".CSV", ".shp");
+
+                if (File.Exists(_customFilename))
+                    continue;
+
+                ExportFile(_customFilename, FTPMethods.SortFile(Entries));
+            }
+        }
+
+        private void PopulateCompanies()
+        {
+
+        }
+
         public bool PopulateFiles(string location)
         {
             string[] _files = Directory.GetFiles(location);
+            LoadedFiles.Clear();
 
             try
             {
-                LoadedFiles = _files.Where(o => o.ToLower().EndsWith("csv")).ToList();
+                foreach (string s in _files)
+                {
+
+                    if (s.EndsWith("tmp")
+                        || (shpVersion && s.ToLower().EndsWith("shp"))
+                        || !shpVersion && s.ToLower().EndsWith("csv"))
+                    {
+                        LoadedFiles.Add(s);
+                    }
+                }
+
+                LoadedFiles.Reverse();
+
+                //if (shpVersion)
+                //    LoadedFiles = _files.Where(o => o.ToLower().EndsWith("shp")).Reverse().ToList();
+                //else
+                //    LoadedFiles = _files.Where(o => o.ToLower().EndsWith("csv")).Reverse().ToList();
                 return true;
             }
             catch
             {
                 return false;
             }
+
         }
 
-        public List<ShippingEntry> ParseEntries(string[] rawEntries, DateTime date)
+        public List<ShippingEntry> ParseEntries(string[] rawEntries, DateTime date, bool ship)
         {
             List<ShippingEntry> result = new List<ShippingEntry>();
-            
+
 
             for (int i = 1; i < rawEntries.Length; i++)
             {
                 if (rawEntries[i] != "")
                 {
-                    ShippingEntry entry = new ShippingEntry(date, rawEntries[i]);
+                    ShippingEntry entry = new ShippingEntry(date, rawEntries[i], ship);
+                    if (entry != null)
+                    {
+                        result.Add(entry);
+                    }
+                }
+            }
+
+            return result;
+        }
+
+        public List<ShippingEntry> ParseEntries(string[] rawEntries, DateTime date)
+        {
+            List<ShippingEntry> result = new List<ShippingEntry>();
+
+
+            for (int i = 1; i < rawEntries.Length; i++)
+            {
+                if (rawEntries[i] != "")
+                {
+                    ShippingEntry entry = new ShippingEntry(date, rawEntries[i], shpVersion);
                     if (entry != null)
                     {
                         result.Add(entry);
@@ -73,6 +148,7 @@ namespace Shiplogger
 
             lvDates.BeginUpdate();
             lvDates.Items.Clear();
+            List<string> dates = new List<string>();
 
             foreach (string s in LoadedFiles)
             {
@@ -84,14 +160,23 @@ namespace Shiplogger
                 };
                 Entry.Text = ParseDate(s).ToString("ddd dd MMMM yyyy");
 
-                if ( ContainsFilterCode(s))
+                if (!dates.Contains(Entry.Text))
                 {
-                    Entry.ForeColor = Color.Blue;
-                    lvDates.Items.Add(Entry);
-                }
-                else if (cbFilter.Checked == false)
-                {
-                    lvDates.Items.Add(Entry);
+                    dates.Add(Entry.Text);
+
+                    if (ContainsFilterCode(s))
+                    {
+                        Entry.ForeColor = Color.Blue;
+                        lvDates.Items.Add(Entry);
+                    }
+                    else if (cbFilter.Checked == false)
+                    {
+                        lvDates.Items.Add(Entry);
+                    }
+                    else
+                    {
+                        Debug.WriteLine(s);
+                    }
                 }
             }
             lvDates.EndUpdate();
@@ -99,37 +184,89 @@ namespace Shiplogger
 
         public void UpdateLVEntries()
         {
-            //if (lvDates.SelectedItems.Count < 1)
-            //    return;
-
+            // Clear old entries.
             lvEntries.BeginUpdate();
             lvEntries.Clear();
+            Entries.Clear();
 
-            if (FileLocation == "")
-                return; ;
+            // Set shp and tmp filenames
+            int pos = FileLocation.IndexOf('.');
+            string tmp = $"{FileLocation.Substring(0, pos)}.tmp";
+            string shp = $"{FileLocation.Substring(0, pos)}.shp";
 
-            string[] Lines = File.ReadAllLines(FileLocation);
+            // Create Entries
+            DateTime date = ParseDate(shp);
+            if (File.Exists(shp) || shp == "")
+            {
+                string[] Lines = File.ReadAllLines(shp);
+                Entries.AddRange(ParseEntries(Lines, date).OrderBy(o => o.CustomerCode).ToList());
+            }
 
-            Entries = ParseEntries(Lines, ParseDate(FileLocation)).OrderBy(o => o.CustomerCode).ToList();
-            string[] ColumnsToAdd = Lines[0].Split(',');
+            // Add in user entries
+            if (File.Exists(tmp))
+            {
+                string[] tempFiles = File.ReadAllLines(tmp);
+                foreach (string s in tempFiles)
+                {
+                    Entries.Add(new ShippingEntry(date, s, shpVersion));
+                }
+            }
 
-            // Add in Date field.
-            lvEntries.Columns.Add("Date");
-            lvEntries.Columns.Add("Courier");
+            Entries = Entries.OrderBy(o => o.CustomerCode).ToList();
+
+            // Create and add in columns.
+            string[] ColumnsToAdd = new string[]
+            {
+                "Date",
+                "Courier",
+                "Shipment Code",
+                "Customer Code",
+                "Customer Name",
+                "Reference 1",
+                "Reference 2",
+                "Reference 3",
+                "Reference 4",
+                "Reference 5",
+                "Package PIN",
+                "Shipment/Piece/Item (S/P/I)",
+                "Total Cost with Tax",
+                "Total Cost Before Tax",
+                "GST Amount",
+                "HST Amount",
+                "QST Amount",
+                "Base Cost",
+                "Residential Area Charge",
+                "Fuel Surcharge",
+                "ExpCheq Surcharge",
+                "Reference Per Piece"
+            };
+
+            if (!shpVersion)
+            {
+                _ = lvEntries.Columns.Add("Courier");
+            }
+
             foreach (string s in ColumnsToAdd)
             {
                 lvEntries.Columns.Add(s);
-
             }
 
-            //string currentCustomer = "";
+            // Temporary assigning of checks to vars to see what is good or not
+            bool entrybool;
+            bool orderbool;
+            bool BOLbool;
+
+            // Set alternating colour.
             bool light = false;
 
             foreach (ShippingEntry entry in Entries)
             {
-                ListViewItem lvi = entry.ToListViewItem();                              
+                ListViewItem lvi = entry.ToListViewItem();
+                entrybool = entry.CustomerCode.ToLower().Contains(FilterCode);
+                orderbool = entry.ContainsOrder(OrderNo);
+                BOLbool = entry.PackagePIN.Contains(FilterBOL);
 
-                if ((FilterCode == "" && OrderNo == "")|| entry.CustomerCode.ToLower().Contains(FilterCode) && entry.ContainsOrder(OrderNo))
+                if ((FilterCode == "" && OrderNo == "" && FilterBOL == "") || (entrybool && orderbool && BOLbool))
                 {
                     if (entry.SPI == "S")
                     {
@@ -149,6 +286,7 @@ namespace Shiplogger
                 }
             }
 
+            // Cleanup.
             lvEntries.AutoResizeColumns(ColumnHeaderAutoResizeStyle.ColumnContent);
             lvEntries.Columns[0].Width = 5;
             lvEntries.EndUpdate();
@@ -172,21 +310,29 @@ namespace Shiplogger
         {
             // Load lines and convert to List<ShippingEntry>.
             string[] Lines = File.ReadAllLines(FileLocation);
-            List<ShippingEntry> Entries = ParseEntries(Lines, DateTime.Now).OrderBy(o => o.CustomerCode).ToList();
+            List<ShippingEntry> Entries;
+            if (Lines.Length == 1)
+            {
+                Entries = new List<ShippingEntry>() { new ShippingEntry(DateTime.Now, Lines[0], shpVersion) };
+            }
+            else
+            {
+                Entries = ParseEntries(Lines, DateTime.Now).OrderBy(o => o.CustomerCode).ToList();
+            }
 
             // Cycle through each entry to check against FilterCode.
             foreach (ShippingEntry entry in Entries)
             {
                 // If CustomerCode matches FilterCode, end method and return.
-                if (entry.CustomerCode.ToLower().Contains(FilterCode) && entry.ContainsOrder(OrderNo))
+                if (entry.CustomerCode.ToLower().Contains(FilterCode) && entry.ContainsOrder(OrderNo) && entry.PackagePIN.Contains(FilterBOL))
                 {
-                    Debug.WriteLine($"ContainsFilterCode match: {entry.CustomerCode}");
+                    //Debug.WriteLine($"ContainsFilterCode match: {entry.CustomerCode}");
                     return true;
                 }
             }
 
             // Nothing matched.
-            Debug.WriteLine($"No match founder for {FilterCode}");
+            //Debug.WriteLine($"No match founder for {FilterCode}");
             return false;
         }
 
@@ -209,10 +355,12 @@ namespace Shiplogger
             return false;
         }
 
+        #region ExportFile
         public bool ExportFile(string location, List<string> lines)
         {
             bool result = false;
-            string columns = @"Shipment Code,Customer Code,Customer Name,Reference 1,Reference 2,Reference 3,Reference 4,Reference 5,Package PIN,Shipment/Piece/Item (S/P/I),Total Cost with Tax,Total Cost Before Tax,GST Amount,HST Amount,QST Amount,Base Cost,Residential Area Charge,Fuel Surcharge,ExpCheq Surcharge,Reference Per Piece";
+
+            string columns = @"Courier,Shipment Code,Customer Code,Customer Name,Reference 1,Reference 2,Reference 3,Reference 4,Reference 5,Package PIN,Shipment/Piece/Item (S/P/I),Total Cost with Tax,Total Cost Before Tax,GST Amount,HST Amount,QST Amount,Base Cost,Residential Area Charge,Fuel Surcharge,ExpCheq Surcharge,Reference Per Piece";
 
             //need to test in a safe environment            
             if (File.Exists(location))
@@ -220,11 +368,11 @@ namespace Shiplogger
                 File.Delete(location);
                 result = true;
             }
-                
+
             using (StreamWriter writer = File.CreateText(location))
             {
                 writer.WriteLine(columns);
-                foreach ( string s in lines)
+                foreach (string s in lines)
                 {
                     writer.WriteLine(s);
                 }
@@ -236,7 +384,8 @@ namespace Shiplogger
         public bool ExportFile(string location, List<ShippingEntry> _Entries)
         {
             bool result = false;
-            string columns = @"Shipment Code,Customer Code,Customer Name,Reference 1,Reference 2,Reference 3,Reference 4,Reference 5,Package PIN,Shipment/Piece/Item (S/P/I),Total Cost with Tax,Total Cost Before Tax,GST Amount,HST Amount,QST Amount,Base Cost,Residential Area Charge,Fuel Surcharge,ExpCheq Surcharge,Reference Per Piece";
+
+            string columns = @"Courier,Shipment Code,Customer Code,Customer Name,Reference 1,Reference 2,Reference 3,Reference 4,Reference 5,Package PIN,Shipment/Piece/Item (S/P/I),Total Cost with Tax,Total Cost Before Tax,GST Amount,HST Amount,QST Amount,Base Cost,Residential Area Charge,Fuel Surcharge,ExpCheq Surcharge,Reference Per Piece";
 
             //need to test in a safe environment            
             if (File.Exists(location))
@@ -250,7 +399,33 @@ namespace Shiplogger
                 writer.WriteLine(columns);
                 foreach (ShippingEntry Entry in _Entries)
                 {
-                    writer.WriteLine(Entry.ToString());
+                    writer.WriteLine(Entry.ToStringLong());
+                }
+            }
+
+            return result;
+        }
+        public bool ExportFile(string location, List<ShippingEntry> _Entries, bool headers)
+        {
+            bool result = false;
+
+            string columns = @"Courier,Shipment Code,Customer Code,Customer Name,Reference 1,Reference 2,Reference 3,Reference 4,Reference 5,Package PIN,Shipment/Piece/Item (S/P/I),Total Cost with Tax,Total Cost Before Tax,GST Amount,HST Amount,QST Amount,Base Cost,Residential Area Charge,Fuel Surcharge,ExpCheq Surcharge,Reference Per Piece";
+
+            //need to test in a safe environment            
+            if (File.Exists(location))
+            {
+                File.Delete(location);
+                result = true;
+            }
+
+            using (StreamWriter writer = File.CreateText(location))
+            {
+                if (headers)
+                    writer.WriteLine(columns);
+
+                foreach (ShippingEntry Entry in _Entries)
+                {
+                    writer.WriteLine(Entry.ToStringLong());
                 }
             }
 
@@ -258,20 +433,12 @@ namespace Shiplogger
         }
         #endregion
 
+        #endregion
+
         #region Events
-        private void BtnFilter_Click(object sender, EventArgs e)
-        {
-            FilterCode = txtCustomer.Text.ToLower();
-            OrderNo = txtOrder.Text.ToLower();
-
-            UpdateListBox();
-
-            UpdateLVEntries();
-        }
-
         private void LvDates_SelectedIndexChanged(object sender, EventArgs e)
         {
-            if (lvDates.SelectedItems.Count <1 || lvDates.SelectedItems[0].ToString() == "")
+            if (lvDates.SelectedItems.Count < 1 || lvDates.SelectedItems[0].ToString() == "")
                 return;
 
 
@@ -283,7 +450,13 @@ namespace Shiplogger
         {
             if (e.KeyCode == Keys.Enter)
                 BtnFilter_Click(sender, e);
-            
+
+        }
+
+        private void TxtBOL_PreviewKeyDown(object sender, PreviewKeyDownEventArgs e)
+        {
+            if (e.KeyCode == Keys.Enter)
+                BtnFilter_Click(sender, e);
         }
 
         private void TxtLocation_PreviewKeyDown(object sender, PreviewKeyDownEventArgs e)
@@ -294,8 +467,7 @@ namespace Shiplogger
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            
-
+            Debug.WriteLine($"Form1_Load");
             BtnPick_Click(sender, e);
         }
 
@@ -323,41 +495,64 @@ namespace Shiplogger
                 }
             }
 
+            if (shpVersion)
+                ConvertAll();
+
             UpdateListBox();
         }
 
-        private void LvEntries_DoubleClick(object sender, EventArgs e)
+        private void BtnFilter_Click(object sender, EventArgs e)
         {
-            if (lvEntries.SelectedItems.Count < 1||lvEntries.SelectedItems[0].SubItems.Count < 10|| lvEntries.SelectedItems[0].SubItems[10].Text == "")
+            FilterCode = txtCustomer.Text.ToLower();
+            OrderNo = txtOrder.Text.ToLower();
+            FilterBOL = txtBOL.Text.ToLower();
+
+            UpdateListBox();
+            UpdateLVEntries();
+        }
+
+        private void BtnNew_Click(object sender, EventArgs e)
+        {
+            if (lvDates.SelectedItems.Count < 1)
                 return;
 
-            Process.Start($"https://www.purolator.com/en/shipping/tracker?pin={lvEntries.SelectedItems[0].SubItems[10].Text}");
-            //Process.Start($"https://www.purolator.com/en/ship-track/tracking-details.page?pin={lvEntries.SelectedItems[0].SubItems[10].Text}");
-        }
+            // Set shp and tmp filenames
+            int pos = FileLocation.IndexOf('.');
+            string tmp = $"{FileLocation.Substring(0, pos)}.tmp";
+            string shp = $"{FileLocation.Substring(0, pos)}.shp";
 
-        #region ToolStrip
-        private void SortEntriesToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            string _new = $"{Settings.Default.BaseDir}\\Archive\\{Path.GetFileName(FileLocation)}";
-            string _folder = Path.GetDirectoryName(_new);
-
-            if ( !File.Exists(_new))
+            DebugWindow debugWindow = new DebugWindow();
+            if (debugWindow.ShowDialog() == DialogResult.OK)
             {
-                Directory.CreateDirectory(_folder);
-                File.Move(FileLocation, _new);
+                ShippingEntry ent = debugWindow.Entry;
+                if (Entries.Count > 0 && ent.Date == Entries[0].Date)
+                {
+                    Entries.Add(ent);
+
+                    ExportFile(tmp, Entries.Where(o => o.CourierCompany != "Purolator").ToList(), false);
+                    ExportFile(shp, Entries.Where(o => o.CourierCompany == "Purolator").ToList());
+                }
+                else
+                {
+                    string s = $"{WorkingDir}\\{ent.Date:yyyy_MM_dd}.tmp";
+
+                    // Create new date file, or add to end of existing one.
+                    if (!File.Exists(tmp))
+                    {
+                        _ = ExportFile(s, new List<ShippingEntry> { ent }, false);
+                    }
+                    else
+                    {
+                        File.AppendAllLines(s, new string[] { ent.ToStringLong() });
+                    }
+                }
+
+                UpdateLVEntries();
             }
-            
 
-            ExportFile(FileLocation, FTPMethods.SortFile(Entries));
-            //ExportFile(FileLocation, FTPMethods.SortFile(Entries));
         }
 
-        private void OpenFileToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            Process.Start(FileLocation);
-        }
-
-        private void EditEntryToolStripMenuItem_Click(object sender, EventArgs e)
+        private void BtnEdit_Click(object sender, EventArgs e)
         {
             if (lvEntries.SelectedItems.Count < 1)
                 return;
@@ -367,10 +562,11 @@ namespace Shiplogger
 
             ShippingEntry Entry = Entries[index];
             DebugWindow debugWindow = new DebugWindow(Entry);
+
             if (debugWindow.ShowDialog() == DialogResult.OK)
             {
                 Entry.LoadString(debugWindow.Entry.ToString());
-                
+
                 lvEntries.Items.RemoveAt(index);
                 ListViewItem item = debugWindow.Entry.ToListViewItem();
                 item.BackColor = shading;
@@ -379,17 +575,132 @@ namespace Shiplogger
                 Entries.RemoveAt(index);
                 Entries.Insert(index, debugWindow.Entry);
 
-                ExportFile(FileLocation, Entries);
+                // Set shp and tmp filenames
+                int pos = FileLocation.IndexOf('.');
+                string tmp = $"{FileLocation.Substring(0, pos)}.tmp";
+                string shp = $"{FileLocation.Substring(0, pos)}.shp";
+
+                ExportFile(tmp, Entries.Where(o => o.CourierCompany != "Purolator").ToList(), false);
+                ExportFile(shp, Entries.Where(o => o.CourierCompany == "Purolator").ToList());
             }
 
+        }
+
+        private void BtnConvert_Click(object sender, EventArgs e)
+        {
+            ConvertAll();
+        }
+
+        private void LvEntries_DoubleClick(object sender, EventArgs e)
+        {
+            if (lvEntries.SelectedItems.Count < 1 || lvEntries.SelectedItems[0].SubItems.Count < 10 || lvEntries.SelectedItems[0].SubItems[10].Text == "")
+                return;
+
+            int index = lvEntries.SelectedIndices[0];
+
+            ShippingEntry ent = Entries[index];
+
+            switch (ent.CourierCompany.ToLower())
+            {
+                case "purolator":
+                    _ = Process.Start(ent.PuroLink);
+                    break;
+
+                case "loomis":
+                    _ = Process.Start($"https://www.loomisexpress.com/loomship/Track/TrackStatus?wbs={ent.PackagePIN}");
+                    break;
+
+                case "corporate":
+                    goto default;
+
+                case "novex":
+                    goto default;
+
+                case "k&h":
+                    _ = Process.Start($"http://cc.khdispatch.com/ccweb1/OrderDetails.aspx?uid={ent.PackagePIN}");
+                    break;
+
+                case "strait":
+                    goto default;
+
+                default:
+                    MessageBox.Show("Courier company does not have auto-tracking yet.");
+                    break;
+            }
+
+            //Process.Start($"https://www.purolator.com/en/shipping/tracker?pin={lvEntries.SelectedItems[0].SubItems[10].Text}");
+            //Process.Start($"https://www.purolator.com/en/ship-track/tracking-details.page?pin={lvEntries.SelectedItems[0].SubItems[10].Text}");
+        }
+
+        private void LvEntries_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (lvEntries.SelectedItems.Count < 1)
+                return;
+
+            int index = lvEntries.SelectedIndices[0];
+
+            ShippingEntry entry = Entries[index];
+            btnOpenLink.Text = entry.CourierCompany;
+        }
+
+        #region ToolStrip
+        private void SortEntriesToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            string _new = $"{Settings.Default.BaseDir}\\Archive\\{Path.GetFileName(FileLocation)}";
+            string _folder = Path.GetDirectoryName(_new);
+            string _customFilename = FileLocation.Replace(".CSV", ".shp");
+
+            if (!File.Exists(_new))
+            {
+                Directory.CreateDirectory(_folder);
+                File.Move(FileLocation, _new);
+            }
+
+            ExportFile(_customFilename, FTPMethods.SortFile(Entries));
+            //ExportFile(FileLocation, FTPMethods.SortFile(Entries));
+        }
+
+        private void OpenFileToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            Process.Start(FileLocation);
         }
 
         private void AddNewEntryToolStripMenuItem_Click(object sender, EventArgs e)
         {
 
         }
-        #endregion
 
+        private void DeleteEntryToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (lvEntries.SelectedItems.Count < 1)
+                return;
+
+            int index = lvEntries.SelectedIndices[0];
+
+            if (MessageBox.Show($"Delete entry for {Entries[index].CustomerCode}?", $"Delete {Entries[index].CustomerCode}", MessageBoxButtons.OKCancel) == DialogResult.Cancel)
+                return;
+
+            lvEntries.Items.RemoveAt(index);
+            Entries.RemoveAt(index);
+
+            // Set shp and tmp filenames
+            int pos = FileLocation.IndexOf('.');
+            string tmp = $"{FileLocation.Substring(0, pos)}.tmp";
+            string shp = $"{FileLocation.Substring(0, pos)}.shp";
+
+            ExportFile(tmp, Entries.Where(o => o.CourierCompany != "Purolator").ToList(), false);
+            ExportFile(shp, Entries.Where(o => o.CourierCompany == "Purolator").ToList());
+            //ExportFile(FileLocation, Entries);
+
+        }
+
+        private void closeToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            this.Close();
+            Application.Exit();
+        }
+
+        #endregion
 
         #endregion
 
@@ -444,11 +755,14 @@ namespace Shiplogger
 
         public ShippingEntry() { }
 
-        public ShippingEntry(DateTime date, string item)
+        public ShippingEntry(DateTime date, string item, bool SHP)
         {
             Date = date;
 
-            LoadString(item);   
+            if (SHP)
+                LoadStringLong(item);
+            else
+                LoadString(item);
         }
 
         public ListViewItem ToListViewItem()
@@ -488,8 +802,19 @@ namespace Shiplogger
                 $"{GSTAmount},{HSTAmount},{QSTAmount},{BaseCost}," +
                 $"{ResidentialAreaCharge},{FuelSurcharge},{ExpCheqSurcharge},{ReferencePerPiece}";
 
-        } 
-    
+        }
+
+        public string ToStringLong()
+        {
+            return $"{CourierCompany},{ShipmentCode},{CustomerCode},{CustomerName}," +
+                $"{Reference1},{Reference2},{Reference3},{Reference4},{Reference5}," +
+                $"{PackagePIN},{SPI},{TotalCostwithTax},{TotalCostBeforeTax}," +
+                $"{GSTAmount},{HSTAmount},{QSTAmount},{BaseCost}," +
+                $"{ResidentialAreaCharge},{FuelSurcharge},{ExpCheqSurcharge},{ReferencePerPiece}";
+
+        }
+
+
         public void LoadString(string item)
         {
             if (!item.Contains(','))
@@ -535,6 +860,55 @@ namespace Shiplogger
                 FuelSurcharge = split[18];
                 ExpCheqSurcharge = split[19];
                 ReferencePerPiece = split[20];
+            }
+        }
+
+        public void LoadStringLong(string item)
+        {
+            if (!item.Contains(','))
+                return;
+
+            string[] split = item.Split(',');
+
+            CourierCompany = split[0];
+            ShipmentCode = split[1];
+            CustomerCode = split[2];
+            CustomerName = split[3];
+            Reference1 = split[4];
+            Reference2 = split[5];
+            Reference3 = split[6];
+            Reference4 = split[7];
+            Reference5 = split[8];
+
+            if (split.Length < 22)
+            {
+                PackagePIN = split[9];
+                SPI = split[10];
+                TotalCostwithTax = split[11];
+                TotalCostBeforeTax = split[12];
+                GSTAmount = split[13];
+                HSTAmount = split[14];
+                QSTAmount = split[15];
+                BaseCost = split[16];
+                ResidentialAreaCharge = split[17];
+                FuelSurcharge = split[18];
+                ExpCheqSurcharge = split[19];
+                ReferencePerPiece = split[20];
+            }
+            else
+            {
+                PackagePIN = split[10];
+                SPI = split[11];
+                TotalCostwithTax = split[12];
+                TotalCostBeforeTax = split[13];
+                GSTAmount = split[14];
+                HSTAmount = split[15];
+                QSTAmount = split[16];
+                BaseCost = split[17];
+                ResidentialAreaCharge = split[18];
+                FuelSurcharge = split[19];
+                ExpCheqSurcharge = split[20];
+                ReferencePerPiece = split[21];
             }
         }
     }
@@ -607,8 +981,21 @@ namespace Shiplogger
                     {
                         try
                         {
-                            string info = GetFTPFile($"{Settings.Default.FTPAddress}/{details[1]}");
-                            File.WriteAllLines(localfile, new string[] { info.Trim() });
+                            string info = GetFTPFile($"{Settings.Default.FTPAddress}/{details[1]}").Trim();
+                            string[] split = info.Split(new string[] { "\r\n" }, StringSplitOptions.RemoveEmptyEntries);
+                            File.WriteAllLines(localfile, split);
+                            string newFile = localfile.Replace("CSV", "shp");
+
+                            //if ( File.Exists(newFile))
+                            //{
+                            //    for(int j = 1; j< split.Length; j++)
+                            //    {
+                            //        using (StreamWriter writer = File.AppendText(newFile))
+                            //        {
+                            //            writer.WriteLine(split[j]);
+                            //        }
+                            //    }
+                            //}
                         }
                         catch (Exception ex)
                         {
@@ -626,6 +1013,22 @@ namespace Shiplogger
 
             switch (temp[1])
             {
+                case "Jan":
+                    temp[1] = "01";
+                    break;
+
+                case "Feb":
+                    temp[1] = "02";
+                    break;
+
+                case "Mar":
+                    temp[1] = "03";
+                    break;
+
+                case "Apr":
+                    temp[1] = "04";
+                    break;
+
                 case "May":
                     temp[1] = "05";
                     break;
@@ -633,6 +1036,31 @@ namespace Shiplogger
                 case "Jun":
                     temp[1] = "06";
                     break;
+
+                case "Jul":
+                    temp[1] = "07";
+                    break;
+
+                case "Aug":
+                    temp[1] = "08";
+                    break;
+
+                case "Sep":
+                    temp[1] = "09";
+                    break;
+
+                case "Oct":
+                    temp[1] = "10";
+                    break;
+
+                case "Nov":
+                    temp[1] = "11";
+                    break;
+
+                case "Dec":
+                    temp[1] = "12";
+                    break;
+
             }
 
             string result = $"{temp[2]}_{temp[1]}_{temp[0]}";
@@ -667,14 +1095,14 @@ namespace Shiplogger
             return new string[] { $"{result[16]} {result[15]} {DateTime.Now.Year}", result[18] };
         }
 
-        public static List<ShippingEntry> ParseRawString(string raw, DateTime Date)
+        public static List<ShippingEntry> ParseRawString(string raw, DateTime Date, bool SHP)
         {
             string[] split = raw.Split(new string[] { "\r\n" }, StringSplitOptions.RemoveEmptyEntries);
             List<ShippingEntry> Entries = new List<ShippingEntry>();
 
             for (int i = 1; i < split.Length; i++)
             {
-                ShippingEntry Entry = new ShippingEntry(Date, split[i]);
+                ShippingEntry Entry = new ShippingEntry(Date, split[i], SHP);
                 Entries.Add(Entry);
             }
 
@@ -686,9 +1114,10 @@ namespace Shiplogger
             List<string> results = new List<string>();
 
 
-            foreach (ShippingEntry E in Entries.OrderBy(o=>o.CustomerName))
+            foreach (ShippingEntry E in Entries.OrderBy(o => o.CustomerName))
             {
-                results.Add(E.ToString());
+                //results.Add(E.ToString());
+                results.Add(E.ToStringLong());
             }
 
 

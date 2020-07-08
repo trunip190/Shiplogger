@@ -17,5 +17,11 @@
     <Setting Name="FTPPort" Type="System.String" Scope="User">
       <Value Profile="(Default)">21</Value>
     </Setting>
+    <Setting Name="DebugMode" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">False</Value>
+    </Setting>
+    <Setting Name="SHPMode" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
   </Settings>
 </SettingsFile>
