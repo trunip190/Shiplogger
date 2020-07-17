@@ -105,13 +105,12 @@
             // 
             // txtID
             // 
-            this.txtID.AutoCompleteMode = System.Windows.Forms.AutoCompleteMode.Suggest;
-            this.txtID.AutoCompleteSource = System.Windows.Forms.AutoCompleteSource.HistoryList;
             this.txtID.Font = new System.Drawing.Font("Microsoft Sans Serif", 11F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.txtID.Location = new System.Drawing.Point(133, 42);
             this.txtID.Name = "txtID";
             this.txtID.Size = new System.Drawing.Size(123, 24);
             this.txtID.TabIndex = 2;
+            this.txtID.Leave += new System.EventHandler(this.TxtID_Leave);
             // 
             // txtRefs
             // 

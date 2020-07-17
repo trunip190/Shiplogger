@@ -8,7 +8,6 @@ using System.Linq;
 using Shiplogger.Properties;
 using System.Net;
 using System.Windows.Forms;
-using System.CodeDom;
 
 namespace Shiplogger
 {
@@ -18,12 +17,15 @@ namespace Shiplogger
         private string FilterCode = "";
         private string OrderNo = "";
         private string FilterBOL = "";
-        private List<string> LoadedFiles = new List<string>();
+        private readonly List<string> LoadedFiles = new List<string>();
         private List<ShippingEntry> Entries = new List<ShippingEntry>();
         private string FileLocation = "";
         private string WorkingDir;
+        private string LogFile => $"{WorkingDir}\\log.txt";
         private readonly bool shpVersion = false;
-        private List<string> companies = new List<string>();
+        private readonly Dictionary<string, string> companies = new Dictionary<string, string>();
+        private string User => Environment.UserName;
+        private string Machine => Environment.MachineName;
         #endregion
 
         #region Methods
@@ -39,6 +41,25 @@ namespace Shiplogger
                 Settings.Default.BaseDir = s;
                 Settings.Default.Save();
             }
+
+        }
+
+        private void Log(string message)
+        {
+            if (!Settings.Default.Log)
+            {
+                return;
+            }
+
+            try
+            {
+                using (StreamWriter writer = File.AppendText(LogFile))
+                {
+                    writer.WriteLine($"[{Machine} - {User}] {message}");
+                }
+            }
+            catch { }
+            finally { }
         }
 
         private void ConvertAll()
@@ -66,7 +87,23 @@ namespace Shiplogger
 
         private void PopulateCompanies()
         {
+            foreach (string s in LoadedFiles)
+            {
+                if (!File.Exists(s))
+                {
+                    return;
+                }
 
+                List<ShippingEntry> ents = ParseEntries(File.ReadAllLines(s), ParseDate(s), shpVersion);
+
+                foreach (ShippingEntry se in ents)
+                {
+                    if (!companies.ContainsKey(se.CustomerCode))
+                    {
+                        companies.Add(se.CustomerCode, se.CustomerName);
+                    }
+                }
+            }
         }
 
         public bool PopulateFiles(string location)
@@ -189,6 +226,9 @@ namespace Shiplogger
             lvEntries.Clear();
             Entries.Clear();
 
+            if (FileLocation == "")
+                return;
+
             // Set shp and tmp filenames
             int pos = FileLocation.IndexOf('.');
             string tmp = $"{FileLocation.Substring(0, pos)}.tmp";
@@ -266,7 +306,7 @@ namespace Shiplogger
                 orderbool = entry.ContainsOrder(OrderNo);
                 BOLbool = entry.PackagePIN.Contains(FilterBOL);
 
-                if ((FilterCode == "" && OrderNo == "" && FilterBOL == "") || (entrybool && orderbool && BOLbool))
+                if ((FilterCode == "" && OrderNo == "" && FilterBOL == "") || (entrybool && orderbool && BOLbool) ||!cbFilter.Checked)
                 {
                     if (entry.SPI == "S")
                     {
@@ -290,6 +330,7 @@ namespace Shiplogger
             lvEntries.AutoResizeColumns(ColumnHeaderAutoResizeStyle.ColumnContent);
             lvEntries.Columns[0].Width = 5;
             lvEntries.EndUpdate();
+            lvEntries.Update();
         }
 
         public DateTime ParseDate(string s)
@@ -405,6 +446,7 @@ namespace Shiplogger
 
             return result;
         }
+        
         public bool ExportFile(string location, List<ShippingEntry> _Entries, bool headers)
         {
             bool result = false;
@@ -431,6 +473,34 @@ namespace Shiplogger
 
             return result;
         }
+
+        private void ExportAll(string tmp, string shp)
+        {
+            if (Entries.Where(o => o.CourierCompany != "Purolator").ToList().Count > 0)
+            {
+                ExportFile(tmp, Entries.Where(o => o.CourierCompany != "Purolator").ToList(), false);
+            }
+            else
+            {
+                if (File.Exists(tmp) && MessageBox.Show("Delete Purolator entries?", "Delete?", MessageBoxButtons.YesNo) == DialogResult.OK)
+                {
+                    File.Delete(tmp);
+                }
+            }
+
+            if (Entries.Where(o => o.CourierCompany == "Purolator").ToList().Count > 0)
+            {
+                ExportFile(shp, Entries.Where(o => o.CourierCompany == "Purolator").ToList());
+            }
+            else
+            {
+                if (File.Exists(shp) && MessageBox.Show("Delete other couriers entries?", "Delete?", MessageBoxButtons.YesNo) == DialogResult.OK)
+                {
+                    File.Delete(shp);
+                }
+            }
+        }
+
         #endregion
 
         #endregion
@@ -469,6 +539,9 @@ namespace Shiplogger
         {
             Debug.WriteLine($"Form1_Load");
             BtnPick_Click(sender, e);
+
+            //Log
+            Log("Logging in");
         }
 
         private void BtnPick_Click(object sender, EventArgs e)
@@ -521,7 +594,11 @@ namespace Shiplogger
             string tmp = $"{FileLocation.Substring(0, pos)}.tmp";
             string shp = $"{FileLocation.Substring(0, pos)}.shp";
 
-            DebugWindow debugWindow = new DebugWindow();
+            DebugWindow debugWindow = new DebugWindow
+            {
+                Companies = companies
+            };
+
             if (debugWindow.ShowDialog() == DialogResult.OK)
             {
                 ShippingEntry ent = debugWindow.Entry;
@@ -529,8 +606,7 @@ namespace Shiplogger
                 {
                     Entries.Add(ent);
 
-                    ExportFile(tmp, Entries.Where(o => o.CourierCompany != "Purolator").ToList(), false);
-                    ExportFile(shp, Entries.Where(o => o.CourierCompany == "Purolator").ToList());
+                    ExportAll(tmp, shp);
                 }
                 else
                 {
@@ -561,7 +637,10 @@ namespace Shiplogger
             Color shading = lvEntries.SelectedItems[0].BackColor;
 
             ShippingEntry Entry = Entries[index];
-            DebugWindow debugWindow = new DebugWindow(Entry);
+            DebugWindow debugWindow = new DebugWindow(Entry)
+            {
+                Companies = companies
+            };
 
             if (debugWindow.ShowDialog() == DialogResult.OK)
             {
@@ -580,8 +659,7 @@ namespace Shiplogger
                 string tmp = $"{FileLocation.Substring(0, pos)}.tmp";
                 string shp = $"{FileLocation.Substring(0, pos)}.shp";
 
-                ExportFile(tmp, Entries.Where(o => o.CourierCompany != "Purolator").ToList(), false);
-                ExportFile(shp, Entries.Where(o => o.CourierCompany == "Purolator").ToList());
+                ExportAll(tmp, shp);
             }
 
         }
@@ -694,7 +772,7 @@ namespace Shiplogger
 
         }
 
-        private void closeToolStripMenuItem_Click(object sender, EventArgs e)
+        private void CloseToolStripMenuItem_Click(object sender, EventArgs e)
         {
             this.Close();
             Application.Exit();
@@ -704,6 +782,15 @@ namespace Shiplogger
 
         #endregion
 
+        private void Form1_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            Log($"{e.CloseReason}");
+        }
+
+        private void CompaniesToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            PopulateCompanies();
+        }
     }
 
     public class ShippingEntry

@@ -54,25 +54,26 @@
             this.label2 = new System.Windows.Forms.Label();
             this.txtOrder = new System.Windows.Forms.TextBox();
             this.btnOpenLink = new System.Windows.Forms.Button();
-            this.timerFTP = new System.Windows.Forms.Timer(this.components);
-            this.workerFTP = new System.ComponentModel.BackgroundWorker();
-            this.panel2 = new System.Windows.Forms.Panel();
-            this.BtnNew = new System.Windows.Forms.Button();
-            this.BtnConvert = new System.Windows.Forms.Button();
-            this.btnEdit = new System.Windows.Forms.Button();
             this.menuStrip1 = new System.Windows.Forms.MenuStrip();
             this.fileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.newEntryToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.editEntryToolStripMenuItem1 = new System.Windows.Forms.ToolStripMenuItem();
             this.deleteEntryToolStripMenuItem1 = new System.Windows.Forms.ToolStripMenuItem();
             this.closeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.timerFTP = new System.Windows.Forms.Timer(this.components);
+            this.workerFTP = new System.ComponentModel.BackgroundWorker();
+            this.panel2 = new System.Windows.Forms.Panel();
+            this.BtnNew = new System.Windows.Forms.Button();
+            this.BtnConvert = new System.Windows.Forms.Button();
+            this.btnEdit = new System.Windows.Forms.Button();
+            this.companiesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.ContextEntries.SuspendLayout();
             this.ContextDays.SuspendLayout();
             this.pnDates.SuspendLayout();
             this.pnEntries.SuspendLayout();
             this.panel1.SuspendLayout();
-            this.panel2.SuspendLayout();
             this.menuStrip1.SuspendLayout();
+            this.panel2.SuspendLayout();
             this.SuspendLayout();
             // 
             // lvEntries
@@ -328,6 +329,59 @@
             this.btnOpenLink.UseVisualStyleBackColor = true;
             this.btnOpenLink.Click += new System.EventHandler(this.LvEntries_DoubleClick);
             // 
+            // menuStrip1
+            // 
+            this.menuStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.fileToolStripMenuItem});
+            this.menuStrip1.Location = new System.Drawing.Point(0, 0);
+            this.menuStrip1.Name = "menuStrip1";
+            this.menuStrip1.Size = new System.Drawing.Size(723, 24);
+            this.menuStrip1.TabIndex = 12;
+            this.menuStrip1.Text = "menuStrip1";
+            // 
+            // fileToolStripMenuItem
+            // 
+            this.fileToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.newEntryToolStripMenuItem,
+            this.editEntryToolStripMenuItem1,
+            this.deleteEntryToolStripMenuItem1,
+            this.closeToolStripMenuItem,
+            this.companiesToolStripMenuItem});
+            this.fileToolStripMenuItem.Name = "fileToolStripMenuItem";
+            this.fileToolStripMenuItem.Size = new System.Drawing.Size(37, 20);
+            this.fileToolStripMenuItem.Text = "File";
+            // 
+            // newEntryToolStripMenuItem
+            // 
+            this.newEntryToolStripMenuItem.Name = "newEntryToolStripMenuItem";
+            this.newEntryToolStripMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.N)));
+            this.newEntryToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.newEntryToolStripMenuItem.Text = "New Entry";
+            this.newEntryToolStripMenuItem.Click += new System.EventHandler(this.BtnNew_Click);
+            // 
+            // editEntryToolStripMenuItem1
+            // 
+            this.editEntryToolStripMenuItem1.Name = "editEntryToolStripMenuItem1";
+            this.editEntryToolStripMenuItem1.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.E)));
+            this.editEntryToolStripMenuItem1.Size = new System.Drawing.Size(180, 22);
+            this.editEntryToolStripMenuItem1.Text = "Edit Entry";
+            this.editEntryToolStripMenuItem1.Click += new System.EventHandler(this.BtnEdit_Click);
+            // 
+            // deleteEntryToolStripMenuItem1
+            // 
+            this.deleteEntryToolStripMenuItem1.Name = "deleteEntryToolStripMenuItem1";
+            this.deleteEntryToolStripMenuItem1.Size = new System.Drawing.Size(180, 22);
+            this.deleteEntryToolStripMenuItem1.Text = "Delete Entry";
+            this.deleteEntryToolStripMenuItem1.Click += new System.EventHandler(this.DeleteEntryToolStripMenuItem_Click);
+            // 
+            // closeToolStripMenuItem
+            // 
+            this.closeToolStripMenuItem.Name = "closeToolStripMenuItem";
+            this.closeToolStripMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Alt | System.Windows.Forms.Keys.F4)));
+            this.closeToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.closeToolStripMenuItem.Text = "Close";
+            this.closeToolStripMenuItem.Click += new System.EventHandler(this.CloseToolStripMenuItem_Click);
+            // 
             // timerFTP
             // 
             this.timerFTP.Interval = 3600000;
@@ -384,57 +438,12 @@
             this.btnEdit.UseVisualStyleBackColor = true;
             this.btnEdit.Click += new System.EventHandler(this.BtnEdit_Click);
             // 
-            // menuStrip1
+            // companiesToolStripMenuItem
             // 
-            this.menuStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.fileToolStripMenuItem});
-            this.menuStrip1.Location = new System.Drawing.Point(0, 0);
-            this.menuStrip1.Name = "menuStrip1";
-            this.menuStrip1.Size = new System.Drawing.Size(723, 24);
-            this.menuStrip1.TabIndex = 12;
-            this.menuStrip1.Text = "menuStrip1";
-            // 
-            // fileToolStripMenuItem
-            // 
-            this.fileToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.newEntryToolStripMenuItem,
-            this.editEntryToolStripMenuItem1,
-            this.deleteEntryToolStripMenuItem1,
-            this.closeToolStripMenuItem});
-            this.fileToolStripMenuItem.Name = "fileToolStripMenuItem";
-            this.fileToolStripMenuItem.Size = new System.Drawing.Size(37, 20);
-            this.fileToolStripMenuItem.Text = "File";
-            // 
-            // newEntryToolStripMenuItem
-            // 
-            this.newEntryToolStripMenuItem.Name = "newEntryToolStripMenuItem";
-            this.newEntryToolStripMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.N)));
-            this.newEntryToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
-            this.newEntryToolStripMenuItem.Text = "New Entry";
-            this.newEntryToolStripMenuItem.Click += new System.EventHandler(this.BtnNew_Click);
-            // 
-            // editEntryToolStripMenuItem1
-            // 
-            this.editEntryToolStripMenuItem1.Name = "editEntryToolStripMenuItem1";
-            this.editEntryToolStripMenuItem1.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.E)));
-            this.editEntryToolStripMenuItem1.Size = new System.Drawing.Size(180, 22);
-            this.editEntryToolStripMenuItem1.Text = "Edit Entry";
-            this.editEntryToolStripMenuItem1.Click += new System.EventHandler(this.BtnEdit_Click);
-            // 
-            // deleteEntryToolStripMenuItem1
-            // 
-            this.deleteEntryToolStripMenuItem1.Name = "deleteEntryToolStripMenuItem1";
-            this.deleteEntryToolStripMenuItem1.Size = new System.Drawing.Size(180, 22);
-            this.deleteEntryToolStripMenuItem1.Text = "Delete Entry";
-            this.deleteEntryToolStripMenuItem1.Click += new System.EventHandler(this.DeleteEntryToolStripMenuItem_Click);
-            // 
-            // closeToolStripMenuItem
-            // 
-            this.closeToolStripMenuItem.Name = "closeToolStripMenuItem";
-            this.closeToolStripMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Alt | System.Windows.Forms.Keys.F4)));
-            this.closeToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
-            this.closeToolStripMenuItem.Text = "Close";
-            this.closeToolStripMenuItem.Click += new System.EventHandler(this.closeToolStripMenuItem_Click);
+            this.companiesToolStripMenuItem.Name = "companiesToolStripMenuItem";
+            this.companiesToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.companiesToolStripMenuItem.Text = "Companies";
+            this.companiesToolStripMenuItem.Click += new System.EventHandler(this.CompaniesToolStripMenuItem_Click);
             // 
             // Form1
             // 
@@ -450,6 +459,7 @@
             this.MinimumSize = new System.Drawing.Size(637, 310);
             this.Name = "Form1";
             this.Text = "Shiplog";
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Form1_FormClosing);
             this.Load += new System.EventHandler(this.Form1_Load);
             this.ContextEntries.ResumeLayout(false);
             this.ContextDays.ResumeLayout(false);
@@ -457,10 +467,10 @@
             this.pnEntries.ResumeLayout(false);
             this.panel1.ResumeLayout(false);
             this.panel1.PerformLayout();
-            this.panel2.ResumeLayout(false);
-            this.panel2.PerformLayout();
             this.menuStrip1.ResumeLayout(false);
             this.menuStrip1.PerformLayout();
+            this.panel2.ResumeLayout(false);
+            this.panel2.PerformLayout();
             this.ResumeLayout(false);
 
         }
@@ -502,6 +512,7 @@
         private System.Windows.Forms.ToolStripMenuItem editEntryToolStripMenuItem1;
         private System.Windows.Forms.ToolStripMenuItem deleteEntryToolStripMenuItem1;
         private System.Windows.Forms.ToolStripMenuItem closeToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem companiesToolStripMenuItem;
     }
 }
 

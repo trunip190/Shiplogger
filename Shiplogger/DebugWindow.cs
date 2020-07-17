@@ -13,11 +13,13 @@ namespace Shiplogger
     public partial class DebugWindow : Form
     {
         public ShippingEntry Entry;
+        public Dictionary<string, string> Companies = new Dictionary<string, string>();
 
         public DebugWindow()
         {
             InitializeComponent();
             Entry = new ShippingEntry();
+
         }
 
         public DebugWindow(ShippingEntry _Entry)
@@ -37,6 +39,18 @@ namespace Shiplogger
                 cbLeadpin.Checked = true;
 
             txtRefs.Text = $"{Entry.Reference1} {Entry.Reference2} {Entry.Reference3} {Entry.Reference4} {Entry.Reference5}";
+
+            AutocompleteID();
+        }
+
+        private void AutocompleteID()
+        {
+            txtID.AutoCompleteMode = AutoCompleteMode.Suggest;
+            txtID.AutoCompleteSource = AutoCompleteSource.CustomSource;
+
+            AutoCompleteStringCollection collection = new AutoCompleteStringCollection();
+            collection.AddRange(Companies.Keys.ToArray());
+            txtID.AutoCompleteCustomSource = collection;
         }
 
         private void BtnCancel_Click(object sender, EventArgs e)
@@ -96,6 +110,14 @@ namespace Shiplogger
                 }
             }
 
+        }
+
+        private void TxtID_Leave(object sender, EventArgs e)
+        {
+            if ( Companies.ContainsKey(txtID.Text))
+            {
+                txtName.Text = Companies[txtID.Text];
+            }
         }
     }
 }
