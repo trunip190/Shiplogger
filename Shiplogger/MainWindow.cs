@@ -11,7 +11,7 @@ using System.Windows.Forms;
 
 namespace Shiplogger
 {
-    public partial class Form1 : Form
+    public partial class MainWindow : Form
     {
         #region variables
         private string FilterCode = "";
@@ -29,7 +29,7 @@ namespace Shiplogger
         #endregion
 
         #region Methods
-        public Form1()
+        public MainWindow()
         {
             Debug.WriteLine($"Form1");
             InitializeComponent();
@@ -55,7 +55,7 @@ namespace Shiplogger
             {
                 using (StreamWriter writer = File.AppendText(LogFile))
                 {
-                    writer.WriteLine($"[{Machine} - {User}] {message}");
+                    writer.WriteLine($"[{DateTime.Now.ToShortDateString()} {DateTime.Now.ToShortTimeString()} {Machine} - {User}] {message}");
                 }
             }
             catch { }
@@ -185,7 +185,15 @@ namespace Shiplogger
 
             lvDates.BeginUpdate();
             lvDates.Items.Clear();
-            List<string> dates = new List<string>();
+            //List<string> dates = new List<string>();
+            Dictionary<string, int> dates = new Dictionary<string, int>();
+
+
+            // New week variables.
+            DateTime lastDate = ParseDate(LoadedFiles[0]);
+            DateTime newDate;
+            Color backColour = Color.White;
+
 
             foreach (string s in LoadedFiles)
             {
@@ -195,28 +203,55 @@ namespace Shiplogger
                     Text = Path.GetFileNameWithoutExtension(s),
                     ForeColor = Color.Black,
                 };
-                Entry.Text = ParseDate(s).ToString("ddd dd MMMM yyyy");
 
-                if (!dates.Contains(Entry.Text))
+                // Format weekly.
+                newDate = ParseDate(s);
+                Entry.Text = newDate.ToString("ddd dd MMMM yyyy");
+
+                if ( NextWeek(lastDate, newDate))
                 {
-                    dates.Add(Entry.Text);
+                    lastDate = newDate;
+                    backColour = backColour == Color.LightGray ? Color.White : Color.LightGray;
+                }
+                Entry.BackColor = backColour;
 
+                // Add if new entry.
+
+                if (!dates.ContainsKey(Entry.Text))
+                {
                     if (ContainsFilterCode(s))
                     {
                         Entry.ForeColor = Color.Blue;
                         lvDates.Items.Add(Entry);
+                        dates.Add(Entry.Text, lvDates.Items.Count - 1);
                     }
                     else if (cbFilter.Checked == false)
                     {
                         lvDates.Items.Add(Entry);
+                        dates.Add(Entry.Text, lvDates.Items.Count - 1);
                     }
                     else
                     {
                         Debug.WriteLine(s);
                     }
                 }
+                else
+                {
+                    if (ContainsFilterCode(s))
+                    {
+                        int i = dates[Entry.Text];
+                        lvDates.Items[i].ForeColor = Color.Blue;
+                    }
+                        //lvDates.Items[i].ForeColor =Color.Blue; 
+                }
             }
+            
             lvDates.EndUpdate();
+        }
+
+        public bool NextWeek(DateTime oldDate, DateTime newDate)
+        {
+            return (newDate - oldDate).TotalDays < -5;
         }
 
         public void UpdateLVEntries()
@@ -331,6 +366,7 @@ namespace Shiplogger
             lvEntries.Columns[0].Width = 5;
             lvEntries.EndUpdate();
             lvEntries.Update();
+            
         }
 
         public DateTime ParseDate(string s)
@@ -542,6 +578,8 @@ namespace Shiplogger
 
             //Log
             Log("Logging in");
+
+            lvDates.SelectedIndices.Add(0);
         }
 
         private void BtnPick_Click(object sender, EventArgs e)
@@ -681,11 +719,13 @@ namespace Shiplogger
             switch (ent.CourierCompany.ToLower())
             {
                 case "purolator":
-                    _ = Process.Start(ent.PuroLink);
+                    //_ = Process.Start(lvEntries.SelectedItems[0].SubItems[10].Text);
+                    Process.Start($"https://www.purolator.com/en/shipping/tracker?pin={lvEntries.SelectedItems[0].SubItems[10].Text}");
+            
                     break;
 
                 case "loomis":
-                    _ = Process.Start($"https://www.loomisexpress.com/loomship/Track/TrackStatus?wbs={ent.PackagePIN}");
+                    _ = Process.Start($"https://www.loomisexpress.com/loomship/Track/TrackStatus?wbs={lvEntries.SelectedItems[0].SubItems[10].Text}");
                     break;
 
                 case "corporate":
@@ -695,7 +735,7 @@ namespace Shiplogger
                     goto default;
 
                 case "k&h":
-                    _ = Process.Start($"http://cc.khdispatch.com/ccweb1/OrderDetails.aspx?uid={ent.PackagePIN}");
+                    _ = Process.Start($"http://cc.khdispatch.com/ccweb1/OrderDetails.aspx?uid={lvEntries.SelectedItems[0].SubItems[10].Text}");
                     break;
 
                 case "strait":
