@@ -60,13 +60,14 @@
             this.editEntryToolStripMenuItem1 = new System.Windows.Forms.ToolStripMenuItem();
             this.deleteEntryToolStripMenuItem1 = new System.Windows.Forms.ToolStripMenuItem();
             this.closeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.companiesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.checkFilesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.timerFTP = new System.Windows.Forms.Timer(this.components);
             this.workerFTP = new System.ComponentModel.BackgroundWorker();
             this.panel2 = new System.Windows.Forms.Panel();
             this.BtnNew = new System.Windows.Forms.Button();
             this.BtnConvert = new System.Windows.Forms.Button();
             this.btnEdit = new System.Windows.Forms.Button();
-            this.companiesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.ContextEntries.SuspendLayout();
             this.ContextDays.SuspendLayout();
             this.pnDates.SuspendLayout();
@@ -90,6 +91,7 @@
             this.lvEntries.TabIndex = 0;
             this.lvEntries.UseCompatibleStateImageBehavior = false;
             this.lvEntries.View = System.Windows.Forms.View.Details;
+            this.lvEntries.ColumnWidthChanged += new System.Windows.Forms.ColumnWidthChangedEventHandler(this.lvEntries_ColumnWidthChanged);
             this.lvEntries.SelectedIndexChanged += new System.EventHandler(this.LvEntries_SelectedIndexChanged);
             this.lvEntries.DoubleClick += new System.EventHandler(this.LvEntries_DoubleClick);
             // 
@@ -346,7 +348,8 @@
             this.editEntryToolStripMenuItem1,
             this.deleteEntryToolStripMenuItem1,
             this.closeToolStripMenuItem,
-            this.companiesToolStripMenuItem});
+            this.companiesToolStripMenuItem,
+            this.checkFilesToolStripMenuItem});
             this.fileToolStripMenuItem.Name = "fileToolStripMenuItem";
             this.fileToolStripMenuItem.Size = new System.Drawing.Size(37, 20);
             this.fileToolStripMenuItem.Text = "File";
@@ -355,7 +358,7 @@
             // 
             this.newEntryToolStripMenuItem.Name = "newEntryToolStripMenuItem";
             this.newEntryToolStripMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.N)));
-            this.newEntryToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.newEntryToolStripMenuItem.Size = new System.Drawing.Size(171, 22);
             this.newEntryToolStripMenuItem.Text = "New Entry";
             this.newEntryToolStripMenuItem.Click += new System.EventHandler(this.BtnNew_Click);
             // 
@@ -363,14 +366,14 @@
             // 
             this.editEntryToolStripMenuItem1.Name = "editEntryToolStripMenuItem1";
             this.editEntryToolStripMenuItem1.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.E)));
-            this.editEntryToolStripMenuItem1.Size = new System.Drawing.Size(180, 22);
+            this.editEntryToolStripMenuItem1.Size = new System.Drawing.Size(171, 22);
             this.editEntryToolStripMenuItem1.Text = "Edit Entry";
             this.editEntryToolStripMenuItem1.Click += new System.EventHandler(this.BtnEdit_Click);
             // 
             // deleteEntryToolStripMenuItem1
             // 
             this.deleteEntryToolStripMenuItem1.Name = "deleteEntryToolStripMenuItem1";
-            this.deleteEntryToolStripMenuItem1.Size = new System.Drawing.Size(180, 22);
+            this.deleteEntryToolStripMenuItem1.Size = new System.Drawing.Size(171, 22);
             this.deleteEntryToolStripMenuItem1.Text = "Delete Entry";
             this.deleteEntryToolStripMenuItem1.Click += new System.EventHandler(this.DeleteEntryToolStripMenuItem_Click);
             // 
@@ -378,9 +381,23 @@
             // 
             this.closeToolStripMenuItem.Name = "closeToolStripMenuItem";
             this.closeToolStripMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Alt | System.Windows.Forms.Keys.F4)));
-            this.closeToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.closeToolStripMenuItem.Size = new System.Drawing.Size(171, 22);
             this.closeToolStripMenuItem.Text = "Close";
             this.closeToolStripMenuItem.Click += new System.EventHandler(this.CloseToolStripMenuItem_Click);
+            // 
+            // companiesToolStripMenuItem
+            // 
+            this.companiesToolStripMenuItem.Name = "companiesToolStripMenuItem";
+            this.companiesToolStripMenuItem.Size = new System.Drawing.Size(171, 22);
+            this.companiesToolStripMenuItem.Text = "Companies";
+            this.companiesToolStripMenuItem.Click += new System.EventHandler(this.CompaniesToolStripMenuItem_Click);
+            // 
+            // checkFilesToolStripMenuItem
+            // 
+            this.checkFilesToolStripMenuItem.Name = "checkFilesToolStripMenuItem";
+            this.checkFilesToolStripMenuItem.Size = new System.Drawing.Size(171, 22);
+            this.checkFilesToolStripMenuItem.Text = "CheckFiles";
+            this.checkFilesToolStripMenuItem.Click += new System.EventHandler(this.checkFilesToolStripMenuItem_Click);
             // 
             // timerFTP
             // 
@@ -438,14 +455,7 @@
             this.btnEdit.UseVisualStyleBackColor = true;
             this.btnEdit.Click += new System.EventHandler(this.BtnEdit_Click);
             // 
-            // companiesToolStripMenuItem
-            // 
-            this.companiesToolStripMenuItem.Name = "companiesToolStripMenuItem";
-            this.companiesToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
-            this.companiesToolStripMenuItem.Text = "Companies";
-            this.companiesToolStripMenuItem.Click += new System.EventHandler(this.CompaniesToolStripMenuItem_Click);
-            // 
-            // Form1
+            // MainWindow
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
@@ -457,7 +467,7 @@
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Margin = new System.Windows.Forms.Padding(2);
             this.MinimumSize = new System.Drawing.Size(637, 310);
-            this.Name = "Form1";
+            this.Name = "MainWindow";
             this.Text = "Shiplog";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Form1_FormClosing);
             this.Load += new System.EventHandler(this.Form1_Load);
@@ -513,6 +523,7 @@
         private System.Windows.Forms.ToolStripMenuItem deleteEntryToolStripMenuItem1;
         private System.Windows.Forms.ToolStripMenuItem closeToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem companiesToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem checkFilesToolStripMenuItem;
     }
 }
 

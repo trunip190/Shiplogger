@@ -118,5 +118,17 @@ namespace Shiplogger.Properties {
                 this["Log"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool FullColumns {
+            get {
+                return ((bool)(this["FullColumns"]));
+            }
+            set {
+                this["FullColumns"] = value;
+            }
+        }
     }
 }

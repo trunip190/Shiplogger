@@ -118,6 +118,7 @@
             this.txtRefs.Location = new System.Drawing.Point(133, 102);
             this.txtRefs.Multiline = true;
             this.txtRefs.Name = "txtRefs";
+            this.txtRefs.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
             this.txtRefs.Size = new System.Drawing.Size(392, 41);
             this.txtRefs.TabIndex = 5;
             // 

@@ -24,6 +24,7 @@ namespace Shiplogger
         private string LogFile => $"{WorkingDir}\\log.txt";
         private readonly bool shpVersion = false;
         private readonly Dictionary<string, string> companies = new Dictionary<string, string>();
+        private readonly bool FullColumns = false;
         private string User => Environment.UserName;
         private string Machine => Environment.MachineName;
         #endregion
@@ -35,6 +36,7 @@ namespace Shiplogger
             InitializeComponent();
             shpVersion = Settings.Default.SHPMode;
             BtnConvert.Enabled = Settings.Default.DebugMode;
+            FullColumns = Settings.Default.FullColumns;
             string s = $"{Environment.CurrentDirectory}\\purofiles\\";
             if (Directory.Exists(s))
             {
@@ -268,6 +270,7 @@ namespace Shiplogger
             int pos = FileLocation.IndexOf('.');
             string tmp = $"{FileLocation.Substring(0, pos)}.tmp";
             string shp = $"{FileLocation.Substring(0, pos)}.shp";
+            Debug.WriteLine(tmp);
 
             // Create Entries
             DateTime date = ParseDate(shp);
@@ -290,41 +293,87 @@ namespace Shiplogger
             Entries = Entries.OrderBy(o => o.CustomerCode).ToList();
 
             // Create and add in columns.
-            string[] ColumnsToAdd = new string[]
+
+            string[] ColumnsToAdd;
+            if (FullColumns)
             {
-                "Date",
-                "Courier",
-                "Shipment Code",
-                "Customer Code",
-                "Customer Name",
-                "Reference 1",
-                "Reference 2",
-                "Reference 3",
-                "Reference 4",
-                "Reference 5",
-                "Package PIN",
-                "Shipment/Piece/Item (S/P/I)",
-                "Total Cost with Tax",
-                "Total Cost Before Tax",
-                "GST Amount",
-                "HST Amount",
-                "QST Amount",
-                "Base Cost",
-                "Residential Area Charge",
-                "Fuel Surcharge",
-                "ExpCheq Surcharge",
-                "Reference Per Piece"
-            };
+                ColumnsToAdd = new string[]
+                {
+                    "Date",
+                    "Courier",
+                    "Shipment Code",
+                    "Customer Code",
+                    "Customer Name",
+                    "Reference 1",
+                    "Reference 2",
+                    "Reference 3",
+                    "Reference 4",
+                    "Reference 5",
+                    "Package PIN",
+                    "Shipment/Piece/Item (S/P/I)",
+                    "Total Cost with Tax",
+                    "Total Cost Before Tax",
+                    "GST Amount",
+                    "HST Amount",
+                    "QST Amount",
+                    "Base Cost",
+                    "Residential Area Charge",
+                    "Fuel Surcharge",
+                    "ExpCheq Surcharge",
+                    "Reference Per Piece"
+                };
+            }
+            else
+            {
+                ColumnsToAdd = new string[]
+                {
+                    "Date",
+                    "Courier",
+                    "Shipment Code",
+                    "Customer Code",
+                    "Customer Name",
+                    "Order 1",
+                    "Order 2",
+                    "Order 3",
+                    "Order 4",
+                    "Order 5+",
+                    "Package PIN",
+                    "Shipment/Piece/Item (S/P/I)",
+                    "Reference Per Piece",
+                    "Weight",
+                    //"Length",
+                    //"Width",
+                    //"Height"
+                };
+
+                lvEntries.Columns.Add("Date", 5);
+                lvEntries.Columns.Add("Courier", 66);
+                lvEntries.Columns.Add("Shipment Code", 50);
+                lvEntries.Columns.Add("Customer Code", 124);
+                lvEntries.Columns.Add("Customer Name", 244);
+                lvEntries.Columns.Add("Orders", 65);
+                //lvEntries.Columns.Add("Order 2", 65);
+                //lvEntries.Columns.Add("Order 3", 65);
+                //lvEntries.Columns.Add("Order 4", 65);
+                //lvEntries.Columns.Add("Order 5+", 65);
+                lvEntries.Columns.Add("Package PIN", 96);
+                lvEntries.Columns.Add("Shipment/Piece/Item (S/P/I)", 50);
+                lvEntries.Columns.Add("Reference Per Piece", 50);
+                lvEntries.Columns.Add("Weight", 61);
+                
+            }
+
+
 
             if (!shpVersion)
             {
                 _ = lvEntries.Columns.Add("Courier");
             }
 
-            foreach (string s in ColumnsToAdd)
-            {
-                lvEntries.Columns.Add(s);
-            }
+            //foreach (string s in ColumnsToAdd)
+            //{
+            //    lvEntries.Columns.Add(s);
+            //}
 
             // Temporary assigning of checks to vars to see what is good or not
             bool entrybool;
@@ -362,8 +411,9 @@ namespace Shiplogger
             }
 
             // Cleanup.
-            lvEntries.AutoResizeColumns(ColumnHeaderAutoResizeStyle.ColumnContent);
-            lvEntries.Columns[0].Width = 5;
+            //lvEntries.AutoResizeColumns(ColumnHeaderAutoResizeStyle.ColumnContent);
+            //lvEntries.Columns[0].Width = 5;
+            lvEntries.Columns[5].AutoResize(ColumnHeaderAutoResizeStyle.ColumnContent);
             lvEntries.EndUpdate();
             lvEntries.Update();
             
@@ -610,6 +660,7 @@ namespace Shiplogger
                 ConvertAll();
 
             UpdateListBox();
+
         }
 
         private void BtnFilter_Click(object sender, EventArgs e)
@@ -714,9 +765,8 @@ namespace Shiplogger
 
             int index = lvEntries.SelectedIndices[0];
 
-            ShippingEntry ent = Entries[index];
 
-            switch (ent.CourierCompany.ToLower())
+            switch (lvEntries.SelectedItems[0].SubItems[1].Text.ToLower())
             {
                 case "purolator":
                     //_ = Process.Start(lvEntries.SelectedItems[0].SubItems[10].Text);
@@ -755,10 +805,8 @@ namespace Shiplogger
             if (lvEntries.SelectedItems.Count < 1)
                 return;
 
-            int index = lvEntries.SelectedIndices[0];
-
-            ShippingEntry entry = Entries[index];
-            btnOpenLink.Text = entry.CourierCompany;
+            
+            btnOpenLink.Text = lvEntries.SelectedItems[0].SubItems[1].Text;
         }
 
         #region ToolStrip
@@ -831,6 +879,37 @@ namespace Shiplogger
         {
             PopulateCompanies();
         }
+
+        private void checkFilesToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            string[] lines;
+            string[] _files = Directory.GetFiles(WorkingDir, "*.csv");
+            string line;
+            int last = 0;
+            int count = 0;
+            foreach (string _file in _files)
+            {
+                lines = File.ReadAllLines(_file);
+                //foreach (string line in lines)
+                for (int i = 1; i < lines.Length; i++)
+                {
+                    line = lines[i];
+                    count = line.Count(o => o == ',');
+                    if (count != last)
+                    {
+                        last = count;
+                        Debug.WriteLine($"{new ShippingEntry(DateTime.Now, line, false).CustomerName} +  {_file}");
+                        break;
+                    }
+                }
+            }
+        }
+
+        private void lvEntries_ColumnWidthChanged(object sender, ColumnWidthChangedEventArgs e)
+        {
+
+            Debug.WriteLine($"lvEntries.Columns.Add({lvEntries.Columns[e.ColumnIndex].Text}, {lvEntries.Columns[e.ColumnIndex].Width}");
+        }
     }
 
     public class ShippingEntry
@@ -857,6 +936,11 @@ namespace Shiplogger
         public string FuelSurcharge;
         public string ExpCheqSurcharge;
         public string ReferencePerPiece;
+        public string Weight;
+        public string Length;
+        public string Width;
+        public string Height;
+
 
         public string PuroLink => $"https://www.purolator.com/en/ship-track/tracking-details.page?pin={PackagePIN}";
 
@@ -900,23 +984,33 @@ namespace Shiplogger
             result.SubItems.Add(ShipmentCode);
             result.SubItems.Add(CustomerCode.ToUpper());
             result.SubItems.Add(CustomerName);
-            result.SubItems.Add(Reference1);
-            result.SubItems.Add(Reference2);
-            result.SubItems.Add(Reference3);
-            result.SubItems.Add(Reference4);
-            result.SubItems.Add(Reference5);
+
+            // All orders combined into one field for the moment.
+            result.SubItems.Add($"{Reference1} {Reference2} {Reference3} {Reference4} {Reference5}");
+            //result.SubItems.Add(Reference2);
+            //result.SubItems.Add(Reference3);
+            //result.SubItems.Add(Reference4);
+            //result.SubItems.Add(Reference5);
+
             result.SubItems.Add(PackagePIN);
             result.SubItems.Add(SPI);
-            result.SubItems.Add(TotalCostwithTax);
-            result.SubItems.Add(TotalCostBeforeTax);
-            result.SubItems.Add(GSTAmount);
-            result.SubItems.Add(HSTAmount);
-            result.SubItems.Add(QSTAmount);
-            result.SubItems.Add(BaseCost);
-            result.SubItems.Add(ResidentialAreaCharge);
-            result.SubItems.Add(FuelSurcharge);
-            result.SubItems.Add(ExpCheqSurcharge);
+
+            // Ignore all of the pricing stuff
+            //result.SubItems.Add(TotalCostwithTax);
+            //result.SubItems.Add(TotalCostBeforeTax);
+            //result.SubItems.Add(GSTAmount);
+            //result.SubItems.Add(HSTAmount);
+            //result.SubItems.Add(QSTAmount);
+            //result.SubItems.Add(BaseCost);
+            //result.SubItems.Add(ResidentialAreaCharge);
+            //result.SubItems.Add(FuelSurcharge);
+            //result.SubItems.Add(ExpCheqSurcharge);
+
             result.SubItems.Add(ReferencePerPiece);
+            result.SubItems.Add(Weight);
+            result.SubItems.Add(Length);
+            result.SubItems.Add(Width);
+            result.SubItems.Add(Height);
 
             return result;
         }
@@ -937,10 +1031,10 @@ namespace Shiplogger
                 $"{Reference1},{Reference2},{Reference3},{Reference4},{Reference5}," +
                 $"{PackagePIN},{SPI},{TotalCostwithTax},{TotalCostBeforeTax}," +
                 $"{GSTAmount},{HSTAmount},{QSTAmount},{BaseCost}," +
-                $"{ResidentialAreaCharge},{FuelSurcharge},{ExpCheqSurcharge},{ReferencePerPiece}";
+                $"{ResidentialAreaCharge},{FuelSurcharge},{ExpCheqSurcharge}," +
+                $"{ReferencePerPiece},{Weight},{Length},{Width},{Height} ";
 
         }
-
 
         public void LoadString(string item)
         {
@@ -957,36 +1051,42 @@ namespace Shiplogger
             Reference3 = split[5];
             Reference4 = split[6];
             Reference5 = split[7];
+            PackagePIN = split[8];
+            SPI = split[9];
+            TotalCostwithTax = split[10];
+            TotalCostBeforeTax = split[11];
+            GSTAmount = split[12];
+            HSTAmount = split[13];
+            QSTAmount = split[14];
+            BaseCost = split[15];
+            ResidentialAreaCharge = split[16];
+            FuelSurcharge = split[17];
 
             if (split.Length < 21)
             {
-                PackagePIN = split[8];
-                SPI = split[9];
-                TotalCostwithTax = split[10];
-                TotalCostBeforeTax = split[11];
-                GSTAmount = split[12];
-                HSTAmount = split[13];
-                QSTAmount = split[14];
-                BaseCost = split[15];
-                ResidentialAreaCharge = split[16];
-                FuelSurcharge = split[17];
+
                 ExpCheqSurcharge = split[18];
                 ReferencePerPiece = split[19];
             }
             else
             {
-                PackagePIN = split[9];
-                SPI = split[10];
-                TotalCostwithTax = split[11];
-                TotalCostBeforeTax = split[12];
-                GSTAmount = split[13];
-                HSTAmount = split[14];
-                QSTAmount = split[15];
-                BaseCost = split[16];
-                ResidentialAreaCharge = split[17];
-                FuelSurcharge = split[18];
-                ExpCheqSurcharge = split[19];
-                ReferencePerPiece = split[20];
+                //PackagePIN = split[9];
+                //SPI = split[10];
+                //TotalCostwithTax = split[11];
+                //TotalCostBeforeTax = split[12];
+                //GSTAmount = split[13];
+                //HSTAmount = split[14];
+                //QSTAmount = split[15];
+                //BaseCost = split[16];
+                //ResidentialAreaCharge = split[17];
+
+                //FuelSurcharge = split[18];
+
+                ReferencePerPiece = split[18];
+                Weight = split[19];
+                Length = split[20];
+                Width = split[21];
+                Height = split[22];
             }
         }
 
@@ -1007,35 +1107,31 @@ namespace Shiplogger
             Reference4 = split[7];
             Reference5 = split[8];
 
-            if (split.Length < 22)
+            PackagePIN = split[9];
+            SPI = split[10];
+            TotalCostwithTax = split[11];
+            TotalCostBeforeTax = split[12];
+            GSTAmount = split[13];
+            HSTAmount = split[14];
+            QSTAmount = split[15];
+            BaseCost = split[16];
+            ResidentialAreaCharge = split[17];
+            if (split.Length < 23)
             {
-                PackagePIN = split[9];
-                SPI = split[10];
-                TotalCostwithTax = split[11];
-                TotalCostBeforeTax = split[12];
-                GSTAmount = split[13];
-                HSTAmount = split[14];
-                QSTAmount = split[15];
-                BaseCost = split[16];
-                ResidentialAreaCharge = split[17];
                 FuelSurcharge = split[18];
                 ExpCheqSurcharge = split[19];
                 ReferencePerPiece = split[20];
             }
             else
             {
-                PackagePIN = split[10];
-                SPI = split[11];
-                TotalCostwithTax = split[12];
-                TotalCostBeforeTax = split[13];
-                GSTAmount = split[14];
-                HSTAmount = split[15];
-                QSTAmount = split[16];
-                BaseCost = split[17];
                 ResidentialAreaCharge = split[18];
                 FuelSurcharge = split[19];
-                ExpCheqSurcharge = split[20];
-                ReferencePerPiece = split[21];
+
+                ReferencePerPiece = split[20];
+                Weight = split[21];
+                Length = split[22];
+                Width = split[23];
+                Height = split[24];
             }
         }
     }
